@@ -34,13 +34,12 @@ public class Main
     /**
      * Label for the number of generations since the beginning of the game.
      */
-    private Label genLabel;     //Количество поколений (передается в game)
+    private Label genLabel;
 
     /**
      * Game field. Extends swt.canvas
      */
-    private GameBoard game;     //Поле для игры
-
+    private GameBoard game;
     /**
      *
      * @param display parent display
