@@ -2,7 +2,7 @@ package GameOfLife;
 
 
 /**
- * Created by user on 18.02.2015.
+ * Created by Vlad Kanash on 18.02.2015.
  */
 
 
@@ -12,27 +12,32 @@ import org.eclipse.swt.widgets.*;
 import  org.eclipse.swt.layout.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
+import java.lang.String;
 
 
 
 /**
- * Основной класс приложения
+ * App Main class
  */
 public class Main
 {
 
+    final static String PlayImagePath = "C:\\Users\\user\\IdeaProjects\\Play.png";   //
+    final static String StopImagePath = "C:\\Users\\user\\IdeaProjects\\Pause.png";  // Button images
+    final static String StepImagePath = "C:\\Users\\user\\IdeaProjects\\Step.png";   //
+
     /**
-     * Окно приложения
+     * App window
      */
     private Shell shell;
 
     /**
-     * Счетчик поколений, прошедших от начала игры
+     * Label for the number of generations since the beginning of the game.
      */
     private Label genLabel;     //Количество поколений (передается в game)
 
     /**
-     * Поле для игры
+     * Game field. Extends swt.canvas
      */
     private GameBoard game;     //Поле для игры
 
@@ -47,7 +52,7 @@ public class Main
 
         shell.setText("Game of Life");
         shell.pack();
-        shell.setSize(600, 400);                          //Начальный размер окна
+        shell.setSize(600, 400);                          //Initial window size
 
         GridLayout layout = new GridLayout(4, false);
         shell.setLayout(layout);
@@ -60,14 +65,14 @@ public class Main
 
         shell.open();
 
-        while (!shell.isDisposed())                       //Цикл обработки событий
+        while (!shell.isDisposed())
             if (!display.readAndDispatch())
                 display.sleep();
     }
 
 
     /**
-     * Создание интерфейса приложения.
+     * Interface init (SWT widgets)
      */
     public void initWidgets()
     {
@@ -75,7 +80,7 @@ public class Main
         ToolBar mainToolBar = new ToolBar(shell, SWT.WRAP | SWT.RIGHT );
 
         final ToolItem start = new ToolItem(mainToolBar, SWT.RADIO);
-        ImageData iib = new ImageData("C:\\Users\\user\\IdeaProjects\\Play.png");
+        ImageData iib = new ImageData(PlayImagePath);
         start.setImage(new Image(shell.getDisplay(), iib));
         start.addSelectionListener(new SelectionListener()
         {
@@ -93,7 +98,7 @@ public class Main
         });
 
         final ToolItem stop = new ToolItem(mainToolBar, SWT.RADIO);
-        ImageData iis = new ImageData("C:\\Users\\user\\IdeaProjects\\Pause.png");
+        ImageData iis = new ImageData(StopImagePath);
         stop.setImage(new Image(shell.getDisplay(), iis));
         stop.addSelectionListener(new SelectionListener()
         {
@@ -111,7 +116,7 @@ public class Main
         });
 
         ToolItem step = new ToolItem(mainToolBar, SWT.PUSH);
-        ImageData stepIm = new ImageData("C:\\Users\\user\\IdeaProjects\\Step.png");
+        ImageData stepIm = new ImageData(StepImagePath);
         step.setImage(new Image(shell.getDisplay(), stepIm));
         step.addSelectionListener(new SelectionListener()
         {
@@ -196,19 +201,19 @@ public class Main
 
 
 
-        Menu mainMenu =  new Menu(shell, SWT.BAR | SWT.LEFT_TO_RIGHT);   //Главное меню
+        Menu mainMenu =  new Menu(shell, SWT.BAR | SWT.LEFT_TO_RIGHT);   //Main Menu
 
-        MenuItem Game = new MenuItem(mainMenu, SWT.CASCADE);    //Меню игры
+        MenuItem Game = new MenuItem(mainMenu, SWT.CASCADE);    //"Game" submenu
         Game.setText("&Game");
 
 
-        //MenuItem Shapes = new MenuItem(mainMenu, SWT.CASCADE);    //Сохраненные паттерны
+        //MenuItem Shapes = new MenuItem(mainMenu, SWT.CASCADE);    //Saved patterns
         //Shapes.setText("&Patterns");
 
-        MenuItem Zoom = new MenuItem(mainMenu, SWT.CASCADE);    //Управление масштабированием
+        MenuItem Zoom = new MenuItem(mainMenu, SWT.CASCADE);    //"Zoom" submenu
         Zoom.setText("&Zoom");
 
-        MenuItem Help = new MenuItem(mainMenu, SWT.PUSH);    //Помощь
+        MenuItem Help = new MenuItem(mainMenu, SWT.PUSH);    //"Help" submenu
         Help.setText("&Help");
         Help.addSelectionListener(new SelectionListener() {
             @Override
@@ -231,7 +236,7 @@ public class Main
 
         Menu gameMenu = new Menu(shell, SWT.DROP_DOWN);
 
-        MenuItem reset = new MenuItem(gameMenu, SWT.PUSH);      //Сброс поля
+        MenuItem reset = new MenuItem(gameMenu, SWT.PUSH);      //Reset game
         reset.setText("&Reset");
         reset.addSelectionListener(new SelectionListener() {
             @Override
@@ -253,7 +258,7 @@ public class Main
             }
         });
 
-        final MenuItem NoGrid = new MenuItem(gameMenu, SWT.CHECK);   //Вкл/выкл отображение сетки
+        final MenuItem NoGrid = new MenuItem(gameMenu, SWT.CHECK);   //Draw grid on/off
         NoGrid.setText("Show grid");
         NoGrid.setSelection(true);
         NoGrid.addSelectionListener(new SelectionListener() {
@@ -273,7 +278,7 @@ public class Main
         Game.setMenu(gameMenu);
 
 
-        Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );         //Сохраненные паттерны
+        Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );         //Saved patterns
 
        // MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
        // glider.setText("Glider");
@@ -345,14 +350,14 @@ public class Main
 
         Zoom.setMenu(zoomMenu);
 
-        shell.setMenuBar(mainMenu);                       //Установка главного меню
+        shell.setMenuBar(mainMenu);
 
     }
 
 
     /**
      * main()
-     * @param args не используется
+     * @param args not used
      */
     public static void main(String[] args)
     {
