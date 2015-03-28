@@ -40,6 +40,14 @@ public class Main
      * Game field. Extends swt.canvas
      */
     private GameBoard game;
+
+
+    /**
+     * File name for the current pattern (if it was loaded from the file)
+     */
+    private String currentGameFile;
+
+
     /**
      *
      * @param display parent display
@@ -51,7 +59,7 @@ public class Main
 
         shell.setText("Game of Life");
         shell.pack();
-        shell.setSize(800, 400);                          //Initial window size
+        shell.setSize(800, 600);                          //Initial window size
 
         GridLayout layout = new GridLayout(4, false);
         shell.setLayout(layout);
@@ -142,7 +150,7 @@ public class Main
 
 
 
-        //"Speed: "
+        //"Speed: " label
         Label speedLabel = new Label(shell, SWT.WRAP);
         speedLabel.setText("Speed: ");
         GridData speedData = new GridData();
@@ -192,7 +200,7 @@ public class Main
 
 
 
-
+        //Main menu
         Menu mainMenu =  new Menu(shell, SWT.BAR | SWT.LEFT_TO_RIGHT);   //Main Menu
 
         MenuItem Game = new MenuItem(mainMenu, SWT.CASCADE);    //"Game" submenu
@@ -267,14 +275,45 @@ public class Main
             }
         });
 
-        final MenuItem save = new MenuItem(gameMenu, SWT.PUSH);
-        save.setText("&Save\tCtrl+S");
-        save.setAccelerator(SWT.CTRL+'S');
+
+        MenuItem load = new MenuItem(gameMenu, SWT.PUSH);     //Load game from file
+        load.setText("&Open\tCtrl+O");
+        load.setAccelerator(SWT.CTRL+'o');
+        load.addSelectionListener(new SelectionListener(){
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+                FileDialog fd = new FileDialog(shell, SWT.OPEN);
+                fd.setFilterPath("C:/");
+                fd.setOverwrite(true);
+                String[] filterExt = { "*.gol" };
+                String[] extName = {"Game of Life pattern (*.gol)"};
+                fd.setFilterNames(extName);
+                fd.setFilterExtensions(filterExt);
+                String selected = fd.open();
+                game.loadGame(selected);
+                currentGameFile = selected;
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
+
+        final MenuItem save = new MenuItem(gameMenu, SWT.PUSH);   //Save the game
+        save.setText("&Save\tShift+Ctrl+S");
+        save.setAccelerator(SWT.CTRL+ SWT.SHIFT + 'S');
         save.addSelectionListener(new SelectionListener()
         {
             @Override
             public void widgetSelected(SelectionEvent e)
             {
+                if (currentGameFile != null)
+                {
+                    game.saveGame(currentGameFile);
+                    return;
+                }
 
                 stop.setSelection(true);
 
@@ -282,9 +321,13 @@ public class Main
                 fd.setFilterPath("C:/");
                 fd.setOverwrite(true);
                 String[] filterExt = { "*.gol" };
+                String[] extName = {"Game of Life pattern (*.gol)"};
+                fd.setFilterNames(extName);
                 fd.setFilterExtensions(filterExt);
                 String selected = fd.open();
+
                 game.saveGame(selected);
+                currentGameFile = selected;
             }
 
             @Override
@@ -295,28 +338,41 @@ public class Main
         });
 
 
-        MenuItem load = new MenuItem(gameMenu, SWT.PUSH);
-        load.setText("&Open\tCtrl+O");
-        load.setAccelerator(SWT.CTRL+'o');
-        load.addSelectionListener(new SelectionListener(){
+        final MenuItem saveAs = new MenuItem(gameMenu, SWT.PUSH);   //Save the game
+        saveAs.setText("Save &as\tCtrl+S");
+        saveAs.setAccelerator(SWT.SHIFT + 's'); //TODO Accelerators!!
+        saveAs.addSelectionListener(new SelectionListener()
+        {
             @Override
-            public void widgetSelected(SelectionEvent e) {
-                FileDialog fd = new FileDialog(shell, SWT.OPEN);
+            public void widgetSelected(SelectionEvent e)
+            {
+                stop.setSelection(true);
+
+                FileDialog fd = new FileDialog(shell, SWT.SAVE);
                 fd.setFilterPath("C:/");
                 fd.setOverwrite(true);
                 String[] filterExt = { "*.gol" };
+                String[] extName = {"Game of Life pattern (*.gol)"};
+                fd.setFilterNames(extName);
                 fd.setFilterExtensions(filterExt);
                 String selected = fd.open();
-                game.loadGame(selected);
+
+                game.saveGame(selected);
+                currentGameFile = selected;
             }
 
             @Override
-            public void widgetDefaultSelected(SelectionEvent e) {
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
                 widgetSelected(e);
             }
         });
 
-        shell.addListener(SWT.Close, new Listener()
+
+
+
+
+        shell.addListener(SWT.Close, new Listener()             //save request before exiting
         {
             public void handleEvent(Event event)
             {
@@ -337,6 +393,8 @@ public class Main
                         fd.setFilterPath("C:/");
                         fd.setOverwrite(true);
                         String[] filterExt = {"*.gol"};
+                        String[] extName = {"Game of Life pattern (*.gol)"};
+                        fd.setFilterNames(extName);
                         fd.setFilterExtensions(filterExt);
                         String selected = fd.open();
                         game.saveGame(selected);

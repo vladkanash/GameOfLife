@@ -440,6 +440,7 @@ public class GameBoard extends Canvas
         cellGrid.load(fileName);
         updateGenLabel();
         redraw();
+
     }
 
     public boolean isSaved()
