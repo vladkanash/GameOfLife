@@ -2,7 +2,7 @@ package GameOfLife;
 
 
 /**
- * Created by user on 24.02.2015.
+ * Created by Vlad Kanash on 24.02.2015.
  */
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.*;
@@ -29,12 +29,12 @@ public class GameBoard extends Canvas
     /**
      * Начальный размер поля в клетках.
      */
-    private final int START_ROWS = 2000;
+    private final int START_ROWS = 2200;
 
     /**
      * Начальный размер поля в клетках.
      */
-    private final int START_COLUMNS = 1000;
+    private final int START_COLUMNS = 1400;
 
 
     /**
@@ -57,7 +57,7 @@ public class GameBoard extends Canvas
     /**
      * Задержка между сменой поколений
      */
-    private int delay = 150;
+    private int delay = 400;
 
 
     /**
@@ -98,6 +98,12 @@ public class GameBoard extends Canvas
      * Рисунок сетки. Сохраняется, т.к. нет необходимости перерисовывать в каждом кадре
      */
     private Image gridImage;
+
+
+    /**
+     * True if the current pattern was not changed after the last save.
+     */
+    private boolean gameSaved = true;
 
 
     //public enum speedValues
@@ -220,18 +226,12 @@ public class GameBoard extends Canvas
 
         updateZoomOffset();
 
-        //cellGrid.setCell(2, 0, true);
-        //cellGrid.setCell(3, 1, true);
-        //cellGrid.setCell(4, 1, true);
-        //cellGrid.setCell(3, 2, true);
-        //cellGrid.setCell(2, 2, true);           //Можно вначале игры поставить что (глайдер)
-
 
         this.setRunState(false);
 
-        for (int i = 700; i<1300; i++)
+        for (int i = 800; i<1400; i++)
         {
-            cellGrid.setCell(i, 500,true);       //Паттерн The Line
+            cellGrid.setCell(i, 700,true);       //Паттерн The Line
         }
 
 
@@ -245,9 +245,10 @@ public class GameBoard extends Canvas
                     cellGrid.next(zoomOffset);  //Переход к следующему поколению
                     redraw();         //Выводим на экран (см. PaintListener)
                     updateGenLabel(); //Обновляем счетчик поколений
+                    gameSaved = false; //Pattern has changed after last save
                 }
 
-                display.timerExec(delay, this); //delay - задержка между кадрами
+                display.timerExec(delay, this); //delay between next() calls
 
             }
         };
@@ -405,6 +406,7 @@ public class GameBoard extends Canvas
         cellGrid.next(zoomOffset);
         updateGenLabel();
         redraw();
+        gameSaved = false;
     }
 
 
@@ -419,9 +421,35 @@ public class GameBoard extends Canvas
         updateGridImage();
     }
 
+    /**
+     * Save current pattern
+     * @param fileName .gol file name
+     */
+    public void saveGame(String fileName)
+    {
+        cellGrid.save(fileName);
+        gameSaved = true;
+    }
 
     /**
-     * Обновляет счетчик поколений
+     * Load pattern from file
+     * @param fileName .gol file name
+     */
+    public void loadGame(String fileName)
+    {
+        cellGrid.load(fileName);
+        updateGenLabel();
+        redraw();
+    }
+
+    public boolean isSaved()
+    {
+        return gameSaved;
+    }
+
+
+    /**
+     * Update the generations label
      */
     public void updateGenLabel()
     {

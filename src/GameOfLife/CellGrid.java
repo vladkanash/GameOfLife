@@ -2,14 +2,19 @@ package GameOfLife;
 
 
 /**
- * Created by user on 04.03.2015.
+ * Created by Vlad Kanash on 04.03.2015.
  */
 
-
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.*;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.gdip.Rect;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+
 
 /**
  * Содержит в себе игровые клетки, а также управляет игровой логикой
@@ -291,6 +296,75 @@ public class CellGrid
         } catch (ArrayIndexOutOfBoundsException e)
         {
             ////
+        }
+    }
+
+
+    /**
+     * Save the current pattern
+     * @param fileName file name
+     */
+    public synchronized void save(String fileName)
+    {
+        if (fileName == null) return;
+
+        try {
+            FileOutputStream fos = new FileOutputStream(fileName);
+            ObjectOutputStream outStream = new ObjectOutputStream(fos);
+
+            outStream.writeObject(currentShape);
+            outStream.writeObject(generations);
+            outStream.close();
+
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        catch (NullPointerException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Load pattern from file
+     * @param fileName file name
+     */
+    public synchronized void load(String fileName)
+    {
+        try {
+            FileInputStream fis = new FileInputStream(fileName);
+            ObjectInputStream inStream = new ObjectInputStream(fis);
+
+            currentShape.clear();
+            nextShape.clear();
+
+            nextShape = (Hashtable)inStream.readObject();
+
+            Cell cell;
+            Enumeration Enum  = nextShape.keys();
+            while (Enum.hasMoreElements())
+            {
+                cell = (Cell)Enum.nextElement();
+                this.setCell(cell.col, cell.row, true);
+            }
+
+
+            generations = (Integer)inStream.readObject();
+            inStream.close();
+
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        catch (NullPointerException e)
+        {
+            e.printStackTrace();
         }
     }
 

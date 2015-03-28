@@ -51,7 +51,7 @@ public class Main
 
         shell.setText("Game of Life");
         shell.pack();
-        shell.setSize(600, 400);                          //Initial window size
+        shell.setSize(800, 400);                          //Initial window size
 
         GridLayout layout = new GridLayout(4, false);
         shell.setLayout(layout);
@@ -175,14 +175,7 @@ public class Main
             @Override
             public void widgetDefaultSelected(SelectionEvent e)
             {
-                switch (speedScale.getSelection())
-                {
-                    case 1:{game.setDelay(800); break;}
-                    case 2:{game.setDelay(400); break;}
-                    case 3:{game.setDelay(150); break;}
-                    case 4:{game.setDelay(50);  break;}
-                    default: break;
-                }
+                widgetSelected(e);
             }
         });
 
@@ -206,8 +199,8 @@ public class Main
         Game.setText("&Game");
 
 
-        //MenuItem Shapes = new MenuItem(mainMenu, SWT.CASCADE);    //Saved patterns
-        //Shapes.setText("&Patterns");
+        MenuItem Shapes = new MenuItem(mainMenu, SWT.CASCADE);    //Saved patterns
+        Shapes.setText("&Patterns");
 
         MenuItem Zoom = new MenuItem(mainMenu, SWT.CASCADE);    //"Zoom" submenu
         Zoom.setText("&Zoom");
@@ -274,18 +267,100 @@ public class Main
             }
         });
 
+        final MenuItem save = new MenuItem(gameMenu, SWT.PUSH);
+        save.setText("&Save\tCtrl+S");
+        save.setAccelerator(SWT.CTRL+'S');
+        save.addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+
+                stop.setSelection(true);
+
+                FileDialog fd = new FileDialog(shell, SWT.SAVE);
+                fd.setFilterPath("C:/");
+                fd.setOverwrite(true);
+                String[] filterExt = { "*.gol" };
+                fd.setFilterExtensions(filterExt);
+                String selected = fd.open();
+                game.saveGame(selected);
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
+            }
+        });
+
+
+        MenuItem load = new MenuItem(gameMenu, SWT.PUSH);
+        load.setText("&Open\tCtrl+O");
+        load.setAccelerator(SWT.CTRL+'o');
+        load.addSelectionListener(new SelectionListener(){
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                FileDialog fd = new FileDialog(shell, SWT.OPEN);
+                fd.setFilterPath("C:/");
+                fd.setOverwrite(true);
+                String[] filterExt = { "*.gol" };
+                fd.setFilterExtensions(filterExt);
+                String selected = fd.open();
+                game.loadGame(selected);
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
+
+        shell.addListener(SWT.Close, new Listener()
+        {
+            public void handleEvent(Event event)
+            {
+                if (!game.isSaved())
+                {
+                    stop.setSelection(true);
+
+                    MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
+                    messageBox.setMessage("Save the game before exit?");
+                    messageBox.setText("Exiting Application");
+                    int response = messageBox.open();
+                    if (response == SWT.YES)
+                    {
+
+                        event.doit = false;
+
+                        FileDialog fd = new FileDialog(shell, SWT.SAVE);
+                        fd.setFilterPath("C:/");
+                        fd.setOverwrite(true);
+                        String[] filterExt = {"*.gol"};
+                        fd.setFilterExtensions(filterExt);
+                        String selected = fd.open();
+                        game.saveGame(selected);
+
+                    } else if (response == SWT.CANCEL)
+                    {
+                        event.doit = false;
+                    }
+                }
+            }
+        });
+
         Game.setMenu(gameMenu);
 
 
         Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );         //Saved patterns
 
-       // MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
-       // glider.setText("Glider");
-       // MenuItem gun    = new MenuItem(shapeMenu, SWT.PUSH);
-        //gun.setText("Gun");
-        // TODO: More shapes
+        MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
+        glider.setText("Glider");
+        MenuItem gun    = new MenuItem(shapeMenu, SWT.PUSH);
+        gun.setText("Gun");
+         //TODO: More shapes
 
-        //Shapes.setMenu(shapeMenu);
+        Shapes.setMenu(shapeMenu);
 
 
         Menu zoomMenu = new Menu(shell, SWT.DROP_DOWN );

@@ -1,28 +1,31 @@
 package GameOfLife;
 
 /**
- * Представляет клетку на игровом поле.
+ * Created by Vlad Kanash on 04.03.2015.
  */
-public class Cell
+
+import java.io.Serializable;
+
+/**
+ * Represents a single cell on the game field.
+ */
+public class Cell implements Serializable
 {
     /**
-     * X-координата клетки
+     * Column of the cell
      */
     public final short col;
 
     /**
-     * Y-координата клетки
+     * Row of the cell
      */
     public final short row;
 
 
     /**
-     * Количество живых соседей клетки
+     * Number of live neighbours
      */
     public byte neighbour;
-
-
-    private static int HASHFACTOR = 5000;
 
 
     /**
@@ -36,21 +39,31 @@ public class Cell
         neighbour = 0;
     }
 
+    /**
+     * Default constructor need for save/load operations
+     */
+    public Cell()
+   {
+       col = 0;
+       row = 0;
+       neighbour = 0;
+   }
 
-    public boolean equals(Object o)        //Необходимо для хэш-таблицы
+
+    public boolean equals(Object o)        //For using in hashtable
     {
         if (!(o instanceof Cell) )
             return false;
         return col==((Cell)o).col && row==((Cell)o).row;
     }
 
-    public int hashCode()                   //Необходимо для хэш-таблицы
+    public int hashCode()                   //For using in hashtable
     {
-        return HASHFACTOR*row+col;
+        return 5000*row+col;
     }
 
-    public String toString()                 //Необходимо для хэш-таблицы
+    public String toString()                 //For using in hashtable
     {
-        return "GameOfLife.Cell at ("+col+", "+row+") with "+neighbour+" neighbour"+(neighbour==1?"":"s");
+        return "C"+col+"R"+row+"N"+neighbour;
     }
 }
