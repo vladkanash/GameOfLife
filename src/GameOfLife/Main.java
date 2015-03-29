@@ -278,7 +278,7 @@ public class Main
 
         MenuItem load = new MenuItem(gameMenu, SWT.PUSH);     //Load game from file
         load.setText("&Open\tCtrl+O");
-        load.setAccelerator(SWT.CTRL+'o');
+        load.setAccelerator(SWT.CTRL | 'O');
         load.addSelectionListener(new SelectionListener(){
             @Override
             public void widgetSelected(SelectionEvent e)
@@ -351,8 +351,11 @@ public class Main
                 FileDialog fd = new FileDialog(shell, SWT.SAVE);
                 fd.setFilterPath("C:/");
                 fd.setOverwrite(true);
+
                 String[] filterExt = { "*.gol" };
                 String[] extName = {"Game of Life pattern (*.gol)"};
+
+                fd.setFileName(currentGameFile);
                 fd.setFilterNames(extName);
                 fd.setFilterExtensions(filterExt);
                 String selected = fd.open();
