@@ -53,6 +53,7 @@ public class CellGrid
     private  Point[] neighbours;
 
 
+
     /**
      * @param cellCols ширина поля (в клетках)
      * @param cellRows высота поля (в клетках)
@@ -74,7 +75,6 @@ public class CellGrid
         for (int i=0; i<8; i++)
             neighbours[i] = new Point(0,0);
 
-
     }
 
     /**
@@ -91,6 +91,7 @@ public class CellGrid
      * @param offset Границы той части поля, которая отрисовывается на экране в данный момент.
      */
     public synchronized void next(Rect offset) {
+
 
         Cell cell;
         int col, row;
@@ -312,8 +313,10 @@ public class CellGrid
             FileOutputStream fos = new FileOutputStream(fileName);
             ObjectOutputStream outStream = new ObjectOutputStream(fos);
 
-            outStream.writeObject(currentShape);
+
             outStream.writeObject(generations);
+            outStream.writeObject(currentShape);
+
             outStream.close();
 
         } catch (IOException e)
@@ -325,6 +328,8 @@ public class CellGrid
             e.printStackTrace();
         }
     }
+
+
 
     /**
      * Load pattern from file
@@ -339,6 +344,7 @@ public class CellGrid
             currentShape.clear();
             nextShape.clear();
 
+            generations = (Integer)inStream.readObject();
             nextShape = (Hashtable)inStream.readObject();
 
             Cell cell;
@@ -350,7 +356,6 @@ public class CellGrid
             }
 
 
-            generations = (Integer)inStream.readObject();
             inStream.close();
 
         }
@@ -368,6 +373,7 @@ public class CellGrid
         }
     }
 
+
     /**
      * Получить количество поколений, прошедших от начала игры
      * @return Количество поколений
@@ -381,6 +387,5 @@ public class CellGrid
             return 0;
         }
     }
-
 
 }

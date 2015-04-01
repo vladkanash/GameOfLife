@@ -375,7 +375,7 @@ public class Main
 
 
 
-        shell.addListener(SWT.Close, new Listener()             //save request before exiting
+        shell.addListener(SWT.Close, new Listener()                           //save request before exiting
         {
             public void handleEvent(Event event)
             {
@@ -417,6 +417,7 @@ public class Main
 
         MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
         glider.setText("Glider");
+
         MenuItem gun    = new MenuItem(shapeMenu, SWT.PUSH);
         gun.setText("Gun");
          //TODO: More shapes

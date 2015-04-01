@@ -6,10 +6,7 @@ package GameOfLife;
  */
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.*;
-import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.gdip.Rect;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Canvas;
@@ -18,7 +15,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Label;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Enumeration;
+import java.util.Hashtable;
 
 /**
  * Представляет поле, на котором рисуются клетки игры
@@ -100,13 +102,14 @@ public class GameBoard extends Canvas
     private Image gridImage;
 
 
+
+    private Scenario scenario;
+
     /**
      * True if the current pattern was not changed after the last save.
      */
     private boolean gameSaved = true;
 
-
-    //public enum speedValues
 
 
     /**
@@ -129,6 +132,7 @@ public class GameBoard extends Canvas
 
 
         cellGrid = new CellGrid(START_ROWS, START_COLUMNS);
+        scenario = new Scenario("Save.txt");
 
 
         //Layout information
@@ -266,8 +270,12 @@ public class GameBoard extends Canvas
     private void drawCell(int x, int y)
     {
 
+
        if (inGame) return;
             cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, true/*!cellUnderMouse*/ );
+
+            //add the cell to the saved scenario.
+            scenario.addEntry(getGeneration(), new Point(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y));
             redraw();
     }
 
@@ -443,6 +451,7 @@ public class GameBoard extends Canvas
 
     }
 
+
     public boolean isSaved()
     {
         return gameSaved;
@@ -456,6 +465,8 @@ public class GameBoard extends Canvas
     {
         genLabel.setText(String.format("Generation: %06d", getGeneration()));
     }
+
+
 }
 
 
