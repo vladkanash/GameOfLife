@@ -132,7 +132,7 @@ public class GameBoard extends Canvas
 
 
         cellGrid = new CellGrid(START_ROWS, START_COLUMNS);
-        scenario = new Scenario("Save.txt");
+        scenario = new Scenario("Save.txt", cellGrid);
 
 
         //Layout information
@@ -449,6 +449,15 @@ public class GameBoard extends Canvas
         updateGenLabel();
         redraw();
 
+    }
+
+
+    /**
+     * Save scenario to the file
+     */
+    public void saveScenario()
+    {
+        scenario.saveScenario();
     }
 
 

@@ -22,9 +22,9 @@ import java.lang.String;
 public class Main
 {
 
-    final static String PlayImagePath = "C:\\Users\\user\\IdeaProjects\\Play.png";   //
-    final static String StopImagePath = "C:\\Users\\user\\IdeaProjects\\Pause.png";  // Button images
-    final static String StepImagePath = "C:\\Users\\user\\IdeaProjects\\Step.png";   //
+    final static String PlayImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Play.png";   //
+    final static String StopImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Pause.png";  // Button images
+    final static String StepImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Step.png";  //
 
     /**
      * App window
@@ -379,6 +379,8 @@ public class Main
         {
             public void handleEvent(Event event)
             {
+                game.saveScenario();
+
                 if (!game.isSaved())
                 {
                     stop.setSelection(true);
