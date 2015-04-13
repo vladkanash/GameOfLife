@@ -29,8 +29,8 @@ public class Cell implements Serializable
 
 
     /**
-     * @param col X-координата клетки
-     * @param row Y-координата клетки
+     * @param col X-pos
+     * @param row Y-pos
      */
     public Cell( int col, int row )
     {

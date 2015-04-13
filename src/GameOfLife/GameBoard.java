@@ -9,12 +9,7 @@ import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.gdip.Rect;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Canvas;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,47 +18,46 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 /**
- * Представляет поле, на котором рисуются клетки игры
+ * Represents a gamefield on the screen
  */
 public class GameBoard extends Canvas
 {
 
     /**
-     * Начальный размер поля в клетках.
+     * Initial rows count of the field.
      */
     private final int START_ROWS = 2200;
 
     /**
-     * Начальный размер поля в клетках.
+     * Initial columns count of the field.
      */
     private final int START_COLUMNS = 1400;
 
 
     /**
-     * true - разрешена отрисовка сетки на поле
+     * False = field without a grid.
      */
     private boolean gridState = true;
 
     /**
-     * true - игровой цикл запущен
-     * false - игра на паузе
+     * False = game is paused.
      */
     private boolean inGame = true;
 
     /**
-     * Текущий размер клетки (в пикселях)
+     * Current cell size (in pixels).
      */
     private int cellSize = 15;
 
 
     /**
-     * Задержка между сменой поколений
+     * Delay between generations.
      */
     private int delay = 400;
 
 
     /**
-     * Ссылка на объект Label, на котором отображается текущее количество поколений
+     * SWT label with the current generations count.
      */
     private Label genLabel;
 
@@ -74,18 +68,18 @@ public class GameBoard extends Canvas
 
 
     /**
-     * Массив клеток поля
+     * Contents game cells and logic.
      */
     private CellGrid cellGrid;
 
 
     /**
-     * Цвет фона поля
+     * Background color.
      */
     private Color BackgroundColor;
 
     /**
-     * Цвет сетки на поле
+     * Grid color.
      */
     private Color ForegroundColor;
 
@@ -102,13 +96,24 @@ public class GameBoard extends Canvas
     private Image gridImage;
 
 
-
+    /**
+     * Saved game scenario
+     */
     private Scenario scenario;
 
     /**
      * True if the current pattern was not changed after the last save.
      */
     private boolean gameSaved = true;
+
+
+    /**
+     * True if scenario is recorded at the moment
+     */
+    private boolean recording = false;
+
+
+    private boolean scnRunning = false;
 
 
 
@@ -132,7 +137,7 @@ public class GameBoard extends Canvas
 
 
         cellGrid = new CellGrid(START_ROWS, START_COLUMNS);
-        scenario = new Scenario("Save.txt", cellGrid);
+        scenario = new Scenario(cellGrid);
 
 
         //Layout information
@@ -180,6 +185,7 @@ public class GameBoard extends Canvas
         {
 
             private boolean mousePressed = false;
+            private boolean cellState = false;
 
             public void handleEvent(Event event)
             {
@@ -187,12 +193,13 @@ public class GameBoard extends Canvas
                 {
                     case SWT.MouseDown:
                         mousePressed = true;
-                        drawCell(event.x, event.y);
+                        cellState = !cellGrid.getCell(event.x / cellSize + zoomOffset.X, event.y / cellSize + zoomOffset.Y);
+                        drawCell(event.x, event.y, cellState);
                         break;
 
                     case SWT.MouseMove:
                         if (mousePressed)
-                            drawCell(event.x, event.y);
+                            drawCell(event.x, event.y, cellState);
                         break;
 
                     case SWT.MouseUp:
@@ -247,7 +254,28 @@ public class GameBoard extends Canvas
                 if (inGame)         //Если игра не на паузе
                 {
                     cellGrid.next(zoomOffset);  //Переход к следующему поколению
+
+                    if (scnRunning)
+                    {
+
+                        if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
+                        {
+                            scnRunning = false;
+                            scenario.clear();
+
+                            //End message
+                            MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
+                            msg.setMessage("Scenario completed!");
+                            msg.open();
+
+                        }
+
+                    }
+
                     redraw();         //Выводим на экран (см. PaintListener)
+
+
+                    cellGrid.incrementGenerations();  //Увеличиваем счетчик поколений
                     updateGenLabel(); //Обновляем счетчик поколений
                     gameSaved = false; //Pattern has changed after last save
                 }
@@ -262,21 +290,26 @@ public class GameBoard extends Canvas
 
 
     /**
-     * Распологает 1 клетку на сетке по координатам Х и У
-     * X, Y - координаты клетки в пикселях внутри объекта GameOfLife.GameBoard
-     * @param x Х-координата
-     * @param y У-координата
+     * Change the state of a single cell on the game field
+     * @param x X pos of the mouse
+     * @param y Y pos of the mouse
+     * @param state true - place new cell
+     *              false - delete cell
      */
-    private void drawCell(int x, int y)
+    private void drawCell(int x, int y, boolean state)
     {
-
-
        if (inGame) return;
-            cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, true/*!cellUnderMouse*/ );
 
-            //add the cell to the saved scenario.
-            scenario.addEntry(getGeneration(), new Point(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y));
-            redraw();
+        cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, state );
+
+        //add the cell info to the saved scenario.
+        if (recording)
+        {
+            Point pos = new Point(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y);
+            scenario.addEntry(getGeneration(), pos, state);
+        }
+
+        redraw();
     }
 
 
@@ -455,9 +488,24 @@ public class GameBoard extends Canvas
     /**
      * Save scenario to the file
      */
-    public void saveScenario()
+    public void saveScenario(String filename)
     {
-        scenario.saveScenario();
+        scenario.saveScenario(filename);
+    }
+
+
+    /**
+     * Load scenario from file and run it.
+     * @param fileName .scn file name
+     */
+    public void runScenario(String fileName)
+    {
+        cellGrid.clear();
+        scenario.clear();
+
+        scenario.loadScenario(fileName);
+
+        this.scnRunning = true;
     }
 
 
@@ -465,6 +513,35 @@ public class GameBoard extends Canvas
     {
         return gameSaved;
     }
+
+
+    public void setRecordState(boolean state)
+    {
+        this.recording = state;
+
+
+        //Save the initial state for the scenario
+        if (state == true)
+        {
+            scenario.addCurrentState(getGeneration());
+        }
+
+        //Save the last generation
+        else
+        {
+            scenario.setLastGeneration(getGeneration());
+        }
+    }
+
+    public Rect getZoomOffset()
+    {
+        return zoomOffset;
+    }
+
+//    public void SetScnRunState(boolean state)
+//    {   scenario.setInitGeneration();
+//        scnRunning = state;
+//    }
 
 
     /**

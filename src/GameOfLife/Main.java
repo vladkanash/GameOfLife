@@ -22,9 +22,9 @@ import java.lang.String;
 public class Main
 {
 
-    final static String PlayImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Play.png";   //
-    final static String StopImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Pause.png";  // Button images
-    final static String StepImagePath = "C:\\Users\\vladislav\\IdeaProjects\\GameOfLife\\Step.png";  //
+    final static String PlayImagePath = "Play.png";   //
+    final static String StopImagePath = "Pause.png";  // Button images
+    final static String StepImagePath = "Step.png";  //
 
     /**
      * App window
@@ -206,6 +206,8 @@ public class Main
         MenuItem Game = new MenuItem(mainMenu, SWT.CASCADE);    //"Game" submenu
         Game.setText("&Game");
 
+        MenuItem Scenario = new MenuItem(mainMenu, SWT.CASCADE);    //"Scenario" submenu
+        Scenario.setText("&Scenario");
 
         MenuItem Shapes = new MenuItem(mainMenu, SWT.CASCADE);    //Saved patterns
         Shapes.setText("&Patterns");
@@ -225,9 +227,7 @@ public class Main
 
             @Override
             public void widgetDefaultSelected(SelectionEvent e) {
-                MessageBox msg = new MessageBox(shell, SWT.NONE);
-                msg.setMessage("No help yet");
-                msg.open();
+                widgetSelected(e);
             }
         });
 
@@ -372,6 +372,86 @@ public class Main
         });
 
 
+        Menu ScenarioMenu = new Menu(shell, SWT.DROP_DOWN);
+
+        final MenuItem Rec = new MenuItem(ScenarioMenu, SWT.CHECK);   //Save the game
+        Rec.setSelection(false);
+        Rec.setText("Record");
+        Rec.addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+                game.setRecordState(Rec.getSelection());
+
+                if (Rec.getSelection())
+                {
+
+                    Zoom.setEnabled(false);
+                }
+
+                else
+                {
+                    FileDialog fd = new FileDialog(shell, SWT.SAVE);
+                    fd.setFilterPath("C:/");
+                    fd.setOverwrite(true);
+
+                    String[] filterExt = { "*.scn" };
+                    String[] extName = {"Game of Life scenario (*.scn)"};
+
+                    fd.setFileName(currentGameFile);
+                    fd.setFilterNames(extName);
+                    fd.setFilterExtensions(filterExt);
+                    String selected = fd.open();
+
+                    game.saveScenario(selected);
+
+                    game.setRecordState(Rec.getSelection());
+
+                    Zoom.setEnabled(true);
+                }
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
+            }
+        });
+
+        final MenuItem Run = new MenuItem(ScenarioMenu, SWT.PUSH);   //Save the game
+        Run.setSelection(false);
+        Run.setText("Load");
+        Run.addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+                FileDialog fd = new FileDialog(shell, SWT.OPEN);
+                fd.setFilterPath("C:/");
+                fd.setOverwrite(true);
+                String[] filterExt = { "*.scn" };
+                String[] extName = {"Game of Life scenario (*.scn)"};
+                fd.setFilterNames(extName);
+                fd.setFilterExtensions(filterExt);
+
+                String selected = fd.open();
+                game.runScenario(selected);
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
+            }
+        });
+
+
+
+
+        Scenario.setMenu(ScenarioMenu);
+
+
 
 
 
@@ -379,7 +459,6 @@ public class Main
         {
             public void handleEvent(Event event)
             {
-                game.saveScenario();
 
                 if (!game.isSaved())
                 {

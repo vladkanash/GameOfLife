@@ -39,6 +39,7 @@ public class CellGrid
     private Hashtable nextShape;
 
 
+
     /**
      * Двумерный массив клеток. Заполняется при начале игры, остается неизменным до конца
      * работы приложения.
@@ -86,6 +87,11 @@ public class CellGrid
         nextShape.clear();
     }
 
+    public void incrementGenerations()
+    {
+        generations++;
+    }
+
     /**
      * Переход к следующему поколению. Реализует логику игры
      * @param offset Границы той части поля, которая отрисовывается на экране в данный момент.
@@ -97,8 +103,7 @@ public class CellGrid
         int col, row;
         Enumeration Enum;
 
-        //Увеличиваем счетчик поколений
-        generations++;
+
         nextShape.clear();
 
 
@@ -386,6 +391,11 @@ public class CellGrid
         {
             return 0;
         }
+    }
+
+    public void setGenerationCount(int generation)
+    {
+        generations = generation;
     }
 
 }
