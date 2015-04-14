@@ -6,6 +6,7 @@ package GameOfLife;
  */
 
 
+import com.sun.prism.paint.Stop;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.*;
 
@@ -61,7 +62,7 @@ public class Main
         shell.pack();
         shell.setSize(800, 600);                          //Initial window size
 
-        GridLayout layout = new GridLayout(4, false);
+        GridLayout layout = new GridLayout(5, false);
         shell.setLayout(layout);
 
 
@@ -187,6 +188,10 @@ public class Main
             }
         });
 
+
+        //Scenario generation spinner
+        Spinner sp = new Spinner(shell, SWT.WRAP);
+        sp.setVisible(false);
 
 
         //Generations label
@@ -372,7 +377,49 @@ public class Main
         });
 
 
+
+        final MenuItem jump = new MenuItem(gameMenu, SWT.PUSH);   //Save the game
+        jump.setText("Jump 100 steps forward");
+        jump.addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+                for (int i=0; i<100; i++)
+                {
+                    game.nextGeneration();
+                }
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
+            }
+        });
+
+
         Menu ScenarioMenu = new Menu(shell, SWT.DROP_DOWN);
+
+
+        final MenuItem replay = new MenuItem(ScenarioMenu, SWT.PUSH);   //Save the game
+        replay.setEnabled(false);
+        replay .setText("Replay");
+        replay .addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+                game.replayScenario();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
+            }
+        });
+
 
         final MenuItem Rec = new MenuItem(ScenarioMenu, SWT.CHECK);   //Save the game
         Rec.setSelection(false);
@@ -383,6 +430,9 @@ public class Main
             public void widgetSelected(SelectionEvent e)
             {
                 game.setRecordState(Rec.getSelection());
+                stop.setSelection(true);
+                start.setSelection(false);
+                game.setRunState(false);
 
                 if (Rec.getSelection())
                 {
@@ -408,6 +458,7 @@ public class Main
 
                     game.setRecordState(Rec.getSelection());
 
+                    replay.setEnabled(true);
                     Zoom.setEnabled(true);
                 }
             }
@@ -436,7 +487,12 @@ public class Main
                 fd.setFilterExtensions(filterExt);
 
                 String selected = fd.open();
-                game.runScenario(selected);
+                replay.setEnabled(true);
+                game.runScenario(selected, sp);
+
+
+
+                //sp.setVisible(true);
             }
 
             @Override
@@ -445,6 +501,27 @@ public class Main
                 widgetSelected(e);
             }
         });
+
+
+        final MenuItem startPlay = new MenuItem(ScenarioMenu, SWT.PUSH);   //Save the game
+        startPlay .setText("Start play");
+        startPlay .addSelectionListener(new SelectionListener() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                game.stopScenarioPlaying();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
+
+
+
+
+
+
 
 
 

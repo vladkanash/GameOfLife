@@ -55,6 +55,8 @@ public class Scenario {
      */
     public void addEntry(int generation, Point coords, boolean action) {
         entryList.add(new ScenarioEntry(generation, coords, action));
+
+
     }
 
     /**
@@ -81,6 +83,19 @@ public class Scenario {
         return lastGen;
     }
 
+
+    /**
+     * Get the initial generation for the record.
+     * @return initial generation
+     */
+    public int getFirstGeneration()
+    {
+        Iterator it = entryList.iterator();
+        if (!it.hasNext()) return 0;
+
+        return ((ScenarioEntry)it.next()).getGeneration();
+    }
+
     /**
      * Saves the current grid state (all living cells) in the record.
      * @param generation current generation.
@@ -89,7 +104,8 @@ public class Scenario {
         Enumeration e = grid.getEnum();
 
         Cell cell;
-        while (e.hasMoreElements()) {
+        while (e.hasMoreElements())
+        {
             cell = (Cell) e.nextElement();
             addEntry(generation, new Point(cell.col, cell.row), true);
         }
@@ -102,6 +118,9 @@ public class Scenario {
      *         false - entry list is empty (no more actions from this scenario can be applied).
      */
     public boolean checkForEntries() {
+
+
+
 
 
         ScenarioEntry entry;
@@ -172,6 +191,7 @@ public class Scenario {
             inStream.close();
 
             setInitGeneration();
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {

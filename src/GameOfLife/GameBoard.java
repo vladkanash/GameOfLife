@@ -142,7 +142,7 @@ public class GameBoard extends Canvas
 
         //Layout information
         GridData data = new GridData();
-        data.horizontalSpan = 4;
+        data.horizontalSpan = 5;
         data.horizontalAlignment = GridData.FILL;
         data.verticalAlignment = GridData.FILL;
         data.grabExcessHorizontalSpace = true;
@@ -253,31 +253,7 @@ public class GameBoard extends Canvas
             {
                 if (inGame)         //Если игра не на паузе
                 {
-                    cellGrid.next(zoomOffset);  //Переход к следующему поколению
-
-                    if (scnRunning)
-                    {
-
-                        if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
-                        {
-                            scnRunning = false;
-                            scenario.clear();
-
-                            //End message
-                            MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
-                            msg.setMessage("Scenario completed!");
-                            msg.open();
-
-                        }
-
-                    }
-
-                    redraw();         //Выводим на экран (см. PaintListener)
-
-
-                    cellGrid.incrementGenerations();  //Увеличиваем счетчик поколений
-                    updateGenLabel(); //Обновляем счетчик поколений
-                    gameSaved = false; //Pattern has changed after last save
+                    nextGeneration();
                 }
 
                 display.timerExec(delay, this); //delay between next() calls
@@ -298,7 +274,7 @@ public class GameBoard extends Canvas
      */
     private void drawCell(int x, int y, boolean state)
     {
-       if (inGame) return;
+       if (inGame || scnRunning) return;
 
         cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, state );
 
@@ -444,10 +420,31 @@ public class GameBoard extends Canvas
      */
     public void nextGeneration()
     {
-        cellGrid.next(zoomOffset);
-        updateGenLabel();
-        redraw();
-        gameSaved = false;
+        cellGrid.next(zoomOffset);  //Переход к следующему поколению
+
+        if (scnRunning)
+        {
+
+            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
+            {
+                scnRunning = false;
+
+                //End message
+                MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
+                msg.setMessage("Scenario completed!");
+                setRunState(false);
+                msg.open();
+
+            }
+
+        }
+
+        redraw();         //Выводим на экран (см. PaintListener)
+
+
+        cellGrid.incrementGenerations();  //Увеличиваем счетчик поколений
+        updateGenLabel(); //Обновляем счетчик поколений
+        gameSaved = false; //Pattern has changed after last save
     }
 
 
@@ -498,12 +495,27 @@ public class GameBoard extends Canvas
      * Load scenario from file and run it.
      * @param fileName .scn file name
      */
-    public void runScenario(String fileName)
+    public void runScenario(String fileName, Spinner sp)
     {
         cellGrid.clear();
         scenario.clear();
 
         scenario.loadScenario(fileName);
+
+        sp.setMaximum(scenario.getLastGeneration());
+        sp.setMinimum(scenario.getFirstGeneration());
+
+        redraw();
+        updateGenLabel();
+       // sp.add
+
+        this.scnRunning = true;
+    }
+
+    public void replayScenario()
+    {
+        cellGrid.clear();
+        scenario.setInitGeneration();
 
         this.scnRunning = true;
     }
@@ -523,6 +535,7 @@ public class GameBoard extends Canvas
         //Save the initial state for the scenario
         if (state == true)
         {
+            scenario.clear();
             scenario.addCurrentState(getGeneration());
         }
 
@@ -531,6 +544,11 @@ public class GameBoard extends Canvas
         {
             scenario.setLastGeneration(getGeneration());
         }
+    }
+
+    public void stopScenarioPlaying()
+    {
+        scnRunning = false;
     }
 
     public Rect getZoomOffset()
