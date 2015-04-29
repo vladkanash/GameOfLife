@@ -4,7 +4,6 @@ package GameOfLife;
 /**
  * Created by Vlad Kanash on 04.03.2015.
  */
-
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.*;
@@ -17,57 +16,78 @@ import java.io.IOException;
 
 
 /**
- * Содержит в себе игровые клетки, а также управляет игровой логикой
+ * Contains game logic and game cells
  */
-public class CellGrid
+public class CellGrid implements Runnable
 {
     /**
-     * Количество поколений, прошедших от начала игры.
+     * Initial rows count of the field.
+     */
+    public final static int gridRows = 1400;
+
+    /**
+     * Initial columns count of the field.
+     */
+    public final static int gridColumns = 2200;
+
+
+    /**
+     * Generations since the game has started
      */
     private int generations;
 
 
     /**
-     * Хэш-таблица, содержащая текущие живые клетки.
+     * Current living cells
      */
-    private Hashtable currentShape;
+    private Hashtable<Cell, Cell> currentShape;
 
 
     /**
-     * Вспомогательная хэш-таблица, необходима для работы next()
+     * Additional hashtable, used in next() method
      */
-    private Hashtable nextShape;
-
+    private Hashtable<Cell, Cell> nextShape;
 
 
     /**
-     * Двумерный массив клеток. Заполняется при начале игры, остается неизменным до конца
-     * работы приложения.
+     * Array of game cells
      */
-    private Cell[][] grid;
+    private final Cell[][] grid;
 
 
     /**
-     * Массив координат соседей клетки.
-     * Необходимо для работы next()
+     * Array of a cell's neighbours. Need for next() method.
      */
-    private  Point[] neighbours;
+    private final Point[] neighbours;
 
+    /**
+     * False = game is paused.
+     * True  = game is running.
+     */
+    private volatile boolean inGame = true;
+
+    /**
+     * Delay between generations.
+     */
+    private volatile int delay = 400;
 
 
     /**
-     * @param cellCols ширина поля (в клетках)
-     * @param cellRows высота поля (в клетках)
+     * Shows the area of the game field which is on the screen at the moment.
      */
-    public CellGrid(int cellCols, int cellRows)
+    private volatile Rect zoomOffset;
+
+
+    public CellGrid()
     {
+        zoomOffset = new Rect();
         this.generations = 0;
-        currentShape = new Hashtable();
-        nextShape = new Hashtable();
+        currentShape = new Hashtable<>();
+        nextShape = new Hashtable<>();
 
-        grid = new Cell[cellCols][cellRows];  //Создаем обьекты клеток и заполняем массив
-        for ( int c=0; c<cellCols; c++)
-            for ( int r=0; r<cellRows; r++ )
+        grid = new Cell[gridColumns][gridRows];  //Initializing cell grid
+        for ( int c=0; c < gridColumns; c++)
+            for ( int r=0; r < gridRows; r++ )
                 grid[c][r] = new Cell( c, r );
 
 
@@ -76,10 +96,43 @@ public class CellGrid
         for (int i=0; i<8; i++)
             neighbours[i] = new Point(0,0);
 
+
+        //Game initialization
+        this.inGame = false;
+
+        for (int i = 800; i<1400; i++)
+        {
+            setCell(i, 700,true);       //"Line" pattern
+        }
     }
 
     /**
-     * Очищает счетчик поколений и хэш таблицы.
+     * Enter point for the thread
+     */
+    public void run()
+    {
+        while(!Thread.interrupted())
+        {
+            try
+            {
+                if (inGame)                 //If game is not paused
+                {
+                    next();                 //To the next generation
+                    incrementGenerations(); //increment the generations counter
+                    Thread.sleep(delay);    //delay before the next generation
+                }
+
+
+            } catch (InterruptedException e)
+            {
+                //ignore
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Clears hashtables and a generation label.
      */
     public synchronized void clear() {
         generations = 0;
@@ -87,27 +140,31 @@ public class CellGrid
         nextShape.clear();
     }
 
-    public void incrementGenerations()
+
+    /**
+     * Increments the generation counter
+     */
+    public synchronized void incrementGenerations()
     {
         generations++;
     }
 
+
     /**
-     * Переход к следующему поколению. Реализует логику игры
-     * @param offset Границы той части поля, которая отрисовывается на экране в данный момент.
+     * Move to the next generation of cells. Game logic here.
      */
-    public synchronized void next(Rect offset) {
-
-
+    public synchronized void next()
+    {
         Cell cell;
         int col, row;
         Enumeration Enum;
 
+        //generations++;
 
         nextShape.clear();
 
 
-        //Обнуляем соседей у всех живых клеток
+        //Clear the neighbours
         Enum = currentShape.keys();
         while ( Enum.hasMoreElements() )
         {
@@ -116,7 +173,7 @@ public class CellGrid
         }
 
 
-        //Заполняем nextShape
+
         Enum = currentShape.keys();
         while ( Enum.hasMoreElements() )
         {
@@ -125,7 +182,7 @@ public class CellGrid
             row = cell.row;
 
 
-            //Координаты соседей клеток
+            //Neighbours coords
             neighbours[0].x = col-1;
             neighbours[0].y = row-1;
 
@@ -151,33 +208,33 @@ public class CellGrid
             neighbours[7].y = row+1;
 
 
-            //Для поля в виде тора
-            if (col == offset.X )
+            //make a tor field
+            if (col == zoomOffset.X )
             {
-                neighbours[0].x += offset.Width;
-                neighbours[3].x += offset.Width;
-                neighbours[5].x += offset.Width;
+                neighbours[0].x += zoomOffset.Width;
+                neighbours[3].x += zoomOffset.Width;
+                neighbours[5].x += zoomOffset.Width;
             }
 
-            if (col == (offset.X + offset.Width - 1))
+            if (col == (zoomOffset.X + zoomOffset.Width - 1))
             {
-                neighbours[2].x -= offset.Width;
-                neighbours[4].x -= offset.Width;
-                neighbours[7].x -= offset.Width;
+                neighbours[2].x -= zoomOffset.Width;
+                neighbours[4].x -= zoomOffset.Width;
+                neighbours[7].x -= zoomOffset.Width;
             }
 
-            if (row == offset.Y)
+            if (row == zoomOffset.Y)
             {
-                neighbours[0].y += offset.Height;
-                neighbours[1].y += offset.Height;
-                neighbours[2].y += offset.Height;
+                neighbours[0].y += zoomOffset.Height;
+                neighbours[1].y += zoomOffset.Height;
+                neighbours[2].y += zoomOffset.Height;
             }
 
-            if (row == (offset.Y + offset.Height - 1))
+            if (row == (zoomOffset.Y + zoomOffset.Height - 1))
             {
-                neighbours[5].y -= offset.Height;
-                neighbours[6].y -= offset.Height;
-                neighbours[7].y -= offset.Height;
+                neighbours[5].y -= zoomOffset.Height;
+                neighbours[6].y -= zoomOffset.Height;
+                neighbours[7].y -= zoomOffset.Height;
             }
 
 
@@ -187,7 +244,7 @@ public class CellGrid
         }
 
 
-        //Первое правило игры
+        //First Game of Life rule
         Enum = currentShape.keys();
         while ( Enum.hasMoreElements() )
         {
@@ -200,7 +257,7 @@ public class CellGrid
             }
         }
 
-        //Второе правило игры
+        //Second Game of Life rule
         Enum = nextShape.keys();
         while ( Enum.hasMoreElements() )
         {
@@ -214,32 +271,30 @@ public class CellGrid
 
 
 
-        //Для поля в виде тора
+        //Delete cells which are not to be drawn
         Enum = currentShape.keys();
         while( Enum.hasMoreElements() )
         {
             cell = (Cell)Enum.nextElement();
 
-            if      (cell.col < offset.X || cell.col > (offset.X + offset.Width) ||
-                    (cell.row < offset.Y || cell.row > (offset.Y + offset.Height)))
+            if      (cell.col < zoomOffset.X || cell.col > (zoomOffset.X + zoomOffset.Width) ||
+                    (cell.row < zoomOffset.Y || cell.row > (zoomOffset.Y + zoomOffset.Height)))
             {
                 cell.neighbour = 0;
-                currentShape.remove(cell);
+               currentShape.remove(cell);
             }
         }
     }
 
     /**
-     * Добавляет соседа к указанной клетке.
-     * Также добавляет клетку в таблицу nextShape если ее там нет.
-     * Необходимо для работы next()
+     * Add a neighbour to the cell. Used in next() method.
      *
-     * @param pos координаты клетки, к которой необходимо добавить соседа
+     * @param pos cell position on the field.
      */
     private synchronized void addNeighbour(Point pos)
     {
         try {
-            Cell cell = (Cell) nextShape.get(grid[pos.x][pos.y]);
+            Cell cell = nextShape.get(grid[pos.x][pos.y]);
             if (cell == null)        //Клетки нет в таблице
             {
                 Cell c = grid[pos.x][pos.y];
@@ -258,18 +313,19 @@ public class CellGrid
     }
 
     /**
-     * Возвращает перечисление текущих живых клеток
-     * @return текущие живые клетки
+     * Get the current living cells
+     * @return current living cells
      */
     public Enumeration getEnum() {
         return currentShape.keys();
     }
 
     /**
-     * Получить значение клетки по указанным координатам
-     * @param col x-coordinate of cell
-     * @param row y-coordinate of cell
-     * @return true - клетка с этими координатами жива
+     * Get the cell state for this position
+     * @param col cell column
+     * @param row cell row
+     * @return true - cell is alive
+     *         false - cell is dead
      */
     public synchronized boolean getCell( int col, int row ) {
         try {
@@ -281,11 +337,11 @@ public class CellGrid
     }
 
     /**
-     * Устанавливает клетку на поле по координатам X и Y
-     * @param col X
-     * @param row Y
-     * @param c Состояние клетки. true - живая клетка
-     *                            false - мертвая клетка
+     * Set the cell state
+     * @param col cell column
+     * @param row cell row
+     * @param c  true - cell is alive
+     *           false - cell is dead
      */
     public synchronized void setCell( int col, int row, boolean c )
     {
@@ -324,11 +380,7 @@ public class CellGrid
 
             outStream.close();
 
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        catch (NullPointerException e)
+        } catch (IOException | NullPointerException e)
         {
             e.printStackTrace();
         }
@@ -340,7 +392,7 @@ public class CellGrid
      * Load pattern from file
      * @param fileName file name
      */
-    public synchronized void load(String fileName)
+    public synchronized void  load(String fileName)
     {
         try {
             FileInputStream fis = new FileInputStream(fileName);
@@ -364,15 +416,7 @@ public class CellGrid
             inStream.close();
 
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        catch (ClassNotFoundException e)
-        {
-            e.printStackTrace();
-        }
-        catch (NullPointerException e)
+        catch (IOException | NullPointerException | ClassNotFoundException e)
         {
             e.printStackTrace();
         }
@@ -380,10 +424,10 @@ public class CellGrid
 
 
     /**
-     * Получить количество поколений, прошедших от начала игры
-     * @return Количество поколений
+     * Get the generations count since the game started
+     * @return current generation count
      */
-    public int getGenerations()
+    public synchronized int getGenerations()
     {
         try {
             return generations;
@@ -393,9 +437,65 @@ public class CellGrid
         }
     }
 
-    public void setGenerationCount(int generation)
+    /**
+     * Sets the new generations value (for scenario functions)
+     * @param generation new generations value
+     */
+    public synchronized void setGenerationCount(int generation)
     {
         generations = generation;
     }
+
+
+    /**
+     * Set the new zoom offset value
+     * @param offset new offset value
+     */
+    public synchronized void setZoomOffset(Rect offset)
+    {
+        this.zoomOffset = offset;
+    }
+
+
+    /**
+     * Set delay between generations
+     * @param delay delay time (in milliseconds)
+     */
+    public synchronized void setDelay(int delay)
+    {
+        this.delay = delay;
+    }
+
+    /**
+     * Get the current delay between generations (in milliseconds)
+     * @return current delay time
+     */
+    public int getDelay()
+    {
+     return delay;
+    }
+
+
+    /**
+     * Set the game state
+     * @param state true - game is running
+     *              false - game is paused
+     */
+    public synchronized void setRunState(boolean state)
+    {
+        this.inGame = state;
+    }
+
+
+    /**
+     * Get the current game state
+     * @return true - game is running
+     *         false - game is paused
+     */
+    public boolean getRunState()
+    {
+        return this.inGame;
+    }
+
 
 }

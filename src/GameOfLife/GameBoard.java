@@ -5,44 +5,23 @@ package GameOfLife;
  * Created by Vlad Kanash on 24.02.2015.
  */
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.gdip.Rect;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.Enumeration;
-import java.util.Hashtable;
+
 
 /**
- * Represents a gamefield on the screen
+ * Represents a game field on the screen
  */
-public class GameBoard extends Canvas
+public class GameBoard extends Canvas implements  Runnable
 {
-
-    /**
-     * Initial rows count of the field.
-     */
-    private final int START_ROWS = 2200;
-
-    /**
-     * Initial columns count of the field.
-     */
-    private final int START_COLUMNS = 1400;
-
-
     /**
      * False = field without a grid.
      */
     private boolean gridState = true;
 
-    /**
-     * False = game is paused.
-     */
-    private boolean inGame = true;
 
     /**
      * Current cell size (in pixels).
@@ -51,47 +30,40 @@ public class GameBoard extends Canvas
 
 
     /**
-     * Delay between generations.
-     */
-    private int delay = 400;
-
-
-    /**
      * SWT label with the current generations count.
      */
-    private Label genLabel;
+    private final Label genLabel;
 
     /**
      * Parent display
      */
-    private Display display;
+    private final Display display;
 
 
     /**
      * Contents game cells and logic.
      */
-    private CellGrid cellGrid;
+    private final CellGrid cellGrid;
 
 
     /**
      * Background color.
      */
-    private Color BackgroundColor;
+    private final Color BackgroundColor;
 
     /**
      * Grid color.
      */
-    private Color ForegroundColor;
+    private final Color ForegroundColor;
 
 
     /**
-     * Смещение масштабирования. Необходимо для того, чтобы вне зависимости от выбранного масштаба
-     * на экране находилась центральная часть игрового поля.
+     * Shows the area of the game field which is on the screen at the moment.
      */
     private Rect zoomOffset;
 
     /**
-     * Рисунок сетки. Сохраняется, т.к. нет необходимости перерисовывать в каждом кадре
+     * Grid image. Does not has to be redrawn every time, so we save it
      */
     private Image gridImage;
 
@@ -101,11 +73,6 @@ public class GameBoard extends Canvas
      */
     private Scenario scenario;
 
-    /**
-     * True if the current pattern was not changed after the last save.
-     */
-    private boolean gameSaved = true;
-
 
     /**
      * True if scenario is recorded at the moment
@@ -113,7 +80,16 @@ public class GameBoard extends Canvas
     private boolean recording = false;
 
 
+    /**
+     * True if scenario is running at the moment
+     */
     private boolean scnRunning = false;
+
+
+    /**
+     * True if scenario is paused at the moment
+     */
+    private boolean scnPaused = false;
 
 
 
@@ -121,7 +97,7 @@ public class GameBoard extends Canvas
      * @param shell Parent Shell
      * @param label Надпись, в которую выводится текущее поколение игры
      */
-    public GameBoard(Shell shell, Label label)
+    public GameBoard(Shell shell, Label label, CellGrid grid)
     {
         super(shell, SWT.BORDER | SWT.NO_BACKGROUND);
 
@@ -133,11 +109,11 @@ public class GameBoard extends Canvas
 
 
         this.genLabel = label;
-        display = shell.getDisplay();
+        this.display = shell.getDisplay();
 
 
-        cellGrid = new CellGrid(START_ROWS, START_COLUMNS);
-        scenario = new Scenario(cellGrid);
+        this.cellGrid = grid;
+        this.scenario = new Scenario(cellGrid);
 
 
         //Layout information
@@ -150,40 +126,34 @@ public class GameBoard extends Canvas
         setLayoutData(data);
 
 
-        this.addPaintListener(new PaintListener() {
-            @Override
-            public void paintControl(PaintEvent e) {
-                //Создаем новый обьект только когда необходимо (если изменился размер поля)
-                Image image = (Image) getData("double-buffer-image");
-                if (image == null
-                        || image.getBounds().width != getSize().x
-                        || image.getBounds().height != getSize().y)
-                {
-                    image = new Image( display, getSize().x, getSize().y);
-                    updateGridImage();
+        this.addPaintListener(e -> {
+            //Создаем новый обьект только когда необходимо (если изменился размер поля)
+            Image image = (Image) getData("double-buffer-image");
+            if (image == null
+                    || image.getBounds().width != getSize().x
+                    || image.getBounds().height != getSize().y)
+            {
+                image = new Image( display, getSize().x, getSize().y);
+                updateGridImage();
 
-                    setData("double-buffer-image", image);
-                }
-
-                GC imageGC = new GC(image);
-
-                imageGC.drawImage(gridImage, 0, 0);   //Рисуем сетку
-
-
-                drawCells(imageGC); //Рисуем клетки
-
-
-                e.gc.drawImage(image,0,0);   //Выводим изображение на экран
-
-                imageGC.dispose();
-                e.gc.dispose();
-
+                setData("double-buffer-image", image);
             }
+
+            GC imageGC = new GC(image);
+
+            imageGC.drawImage(gridImage, 0, 0);   //Рисуем сетку (загружаем сохраненную)
+            drawCells(imageGC); //Рисуем клетки
+
+
+            e.gc.drawImage(image,0,0);   //Выводим изображение на экран
+
+            imageGC.dispose();
+            e.gc.dispose();
+
         });
 
         Listener mouseListener = new Listener()
         {
-
             private boolean mousePressed = false;
             private boolean cellState = false;
 
@@ -213,55 +183,59 @@ public class GameBoard extends Canvas
         this.addListener(SWT.MouseMove, mouseListener);
         this.addListener(SWT.MouseUp, mouseListener);
 
-        this.addListener(SWT.Resize, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                updateZoomOffset();
-            }
-        });
+        this.addListener(SWT.Resize, event -> updateZoomOffset());
 
 
         this.setBackground(BackgroundColor);
 
-        initGame(shell.getDisplay());   //Запускает игровой цикл
+        //initGame(shell.getDisplay());   //Запускает игровой цикл
+
+        display.asyncExec(this); //initial run() call
+        updateZoomOffset();
     }
 
 
-
     /**
-     * Создает новый поток, в котором запускает игровой цикл.
-     *
-     * @param display Parent display
+     *Used by Display.asyncExec() method
      */
-    private void initGame(final Display display) {
+    public void run()
+    {
+        redraw();
+        updateGenLabel();
 
-        updateZoomOffset();
-
-
-        this.setRunState(false);
-
-        for (int i = 800; i<1400; i++)
+        if (scnRunning && !scnPaused)
         {
-            cellGrid.setCell(i, 700,true);       //Паттерн The Line
+            cellGrid.setRunState(false);
+            cellGrid.next();
+
+
+            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
+            {
+                scnRunning = false;
+
+                //End message
+                MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
+                msg.setMessage("Scenario completed!");
+                cellGrid.setRunState(false);
+                msg.open();
+
+
+                if (!getShell().isDisposed()) display.asyncExec(this);
+            }
+            else
+            {
+                redraw();
+                cellGrid.incrementGenerations();
+                display.timerExec(cellGrid.getDelay(), this);
+            }
         }
 
 
-        //Создаем новый поток
-        Runnable runnable = new Runnable()    //Новый поток
+        else
         {
-            public void run()
-            {
-                if (inGame)         //Если игра не на паузе
-                {
-                    nextGeneration();
-                }
+            if (!getShell().isDisposed()) display.asyncExec(this);
+        }
 
-                display.timerExec(delay, this); //delay between next() calls
-
-            }
-        };
-
-        display.timerExec(delay, runnable);
     }
 
 
@@ -274,7 +248,7 @@ public class GameBoard extends Canvas
      */
     private void drawCell(int x, int y, boolean state)
     {
-       if (inGame || scnRunning) return;
+       if (cellGrid.getRunState() || scnRunning) return;
 
         cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, state );
 
@@ -284,15 +258,12 @@ public class GameBoard extends Canvas
             Point pos = new Point(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y);
             scenario.addEntry(getGeneration(), pos, state);
         }
-
-        redraw();
     }
 
 
 
-
     /**
-     *Обновляет рисунок сетки. (при изменении размера окна, масштабировании и т.п.)
+     *Set the new grid image (after resizing, zooming, etc.)
      */
     private void updateGridImage()
     {
@@ -306,19 +277,18 @@ public class GameBoard extends Canvas
         Rectangle imageSize = gridImage.getBounds();
         gridGC.fillRectangle(0, 0, imageSize.width + 1, imageSize.height + 1);
 
-        drawGrid(gridGC); //Рисуем сетку
+        drawGrid(gridGC); //Draw the grid
         gridGC.dispose();
     }
 
 
 
     /**
-     * Рисует сетку на экране.
-     * @param e объект GC для рисования сетки
+     * Draw the grid on the canvas
+     * @param e canvas GC
      */
     private void drawGrid(GC e)
     {
-        //Если рисование сетки отменено то выходим
         if (!gridState) return;
 
         for (int i=0; i < getSize().x; i+= cellSize)
@@ -331,8 +301,8 @@ public class GameBoard extends Canvas
 
 
     /**
-     * Рисует "живые" клетки на экране
-     * @param e объект GC для рисования клеток
+     * Draw the living cells on the canvas
+     * @param e canvas GC
      */
     private void drawCells(GC e)
     {
@@ -351,52 +321,42 @@ public class GameBoard extends Canvas
     }
 
     /**
-     * Возвращает количество поколений, прошедших от начала игры
-     * @return количество поколений
+     * Get the generations count since the game has started
+     * @return generations count
      */
-    private int getGeneration()
+    private synchronized int getGeneration()
     {
         return cellGrid.getGenerations();
     }
 
 
     /**
-     * Вычисляет значение смещения для масштабирования камеры на поле
+     * Calculate the new zoomOffset value (depending on canvas size)
      */
-    private void updateZoomOffset()
+    public void updateZoomOffset()
     {
-        this.zoomOffset.X = (int) (0.5 * (START_ROWS - getSize().x / cellSize));
-        this.zoomOffset.Y = (int) (0.5 * (START_COLUMNS - getSize().y / cellSize));
-        this.zoomOffset.Width = getSize().x / cellSize;
-        this.zoomOffset.Height = getSize().y / cellSize;
+        this.zoomOffset.X = (int) (0.5 * (CellGrid.gridColumns - this.getSize().x / cellSize));
+        this.zoomOffset.Y = (int) (0.5 * (CellGrid.gridRows - this.getSize().y / cellSize));
+        this.zoomOffset.Width = this.getSize().x / cellSize;
+        this.zoomOffset.Height = this.getSize().y / cellSize;
+
+        cellGrid.setZoomOffset(zoomOffset);
     }
 
     /**
-     * Меняет размер клетки, перерисовывает сетку
-     *
-     * @param newCellSize новый размер клетки (в пикселях)
+     * Changes cell size and updates the image
+     * @param newCellSize new cell size (in pixels)
      */
-    public void zoom(int newCellSize)
+    public synchronized void zoom(int newCellSize)
     {
         cellSize = newCellSize;
         updateZoomOffset();
         updateGridImage();
-        redraw();
-    }
-
-    /**
-     * Устанавливает состояние игры
-     * @param state true - игра работает
-     *              false - игра на паузе
-     */
-    public void setRunState(boolean state)
-    {
-        this.inGame = state;
     }
 
 
     /**
-     * Очищает поле, обнуляет счетчик поколений
+     * Resets the game
      */
     public void resetGame()
     {
@@ -406,54 +366,11 @@ public class GameBoard extends Canvas
 
 
     /**
-     * Устанавливает задержку между сменой поколений
-     * @param delay время задержки (милисекунды)
+     * Grid state
+     * @param newState true - show the grid
+     *                 false - hide it
      */
-    public void setDelay(int delay)
-    {
-        this.delay = delay;
-    }
-
-
-    /**
-     * Переход к следующему поколению и обновление счетчика поколений.
-     */
-    public void nextGeneration()
-    {
-        cellGrid.next(zoomOffset);  //Переход к следующему поколению
-
-        if (scnRunning)
-        {
-
-            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
-            {
-                scnRunning = false;
-
-                //End message
-                MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
-                msg.setMessage("Scenario completed!");
-                setRunState(false);
-                msg.open();
-
-            }
-
-        }
-
-        redraw();         //Выводим на экран (см. PaintListener)
-
-
-        cellGrid.incrementGenerations();  //Увеличиваем счетчик поколений
-        updateGenLabel(); //Обновляем счетчик поколений
-        gameSaved = false; //Pattern has changed after last save
-    }
-
-
-    /**
-     * Включить/выключить отрисовку сетки на экране
-     * @param newState true - отрисовывать сетку
-     *                 false - не отрисовывать сетку
-     */
-    public void setGridState(boolean newState)
+    public synchronized void setGridState(boolean newState)
     {
         this.gridState = newState;
         updateGridImage();
@@ -466,7 +383,6 @@ public class GameBoard extends Canvas
     public void saveGame(String fileName)
     {
         cellGrid.save(fileName);
-        gameSaved = true;
     }
 
     /**
@@ -477,8 +393,7 @@ public class GameBoard extends Canvas
     {
         cellGrid.load(fileName);
         updateGenLabel();
-        redraw();
-
+        //redraw();
     }
 
 
@@ -505,25 +420,26 @@ public class GameBoard extends Canvas
         sp.setMaximum(scenario.getLastGeneration());
         sp.setMinimum(scenario.getFirstGeneration());
 
-        redraw();
-        updateGenLabel();
-       // sp.add
 
+        //redraw();
+        updateGenLabel();
+
+        cellGrid.setRunState(false);
+        setScnPause(true);
         this.scnRunning = true;
     }
 
+    /**
+     * Replay the scenario from the memory
+     */
     public void replayScenario()
     {
         cellGrid.clear();
         scenario.setInitGeneration();
 
+        cellGrid.setRunState(false);
+        setScnPause(false);
         this.scnRunning = true;
-    }
-
-
-    public boolean isSaved()
-    {
-        return gameSaved;
     }
 
 
@@ -533,7 +449,7 @@ public class GameBoard extends Canvas
 
 
         //Save the initial state for the scenario
-        if (state == true)
+        if (state)
         {
             scenario.clear();
             scenario.addCurrentState(getGeneration());
@@ -546,15 +462,19 @@ public class GameBoard extends Canvas
         }
     }
 
+    /**
+     * Return to the normal game mode
+     */
     public void stopScenarioPlaying()
     {
         scnRunning = false;
     }
 
-    public Rect getZoomOffset()
-    {
-        return zoomOffset;
-    }
+
+//    public Rect getZoomOffset()
+//    {
+//        return zoomOffset;
+//    }
 
 //    public void SetScnRunState(boolean state)
 //    {   scenario.setInitGeneration();
@@ -570,6 +490,62 @@ public class GameBoard extends Canvas
         genLabel.setText(String.format("Generation: %06d", getGeneration()));
     }
 
+
+    /**
+     * Go to the next generation (for the "step" button)
+     */
+    public void makeStep()
+    {
+        if (scnRunning)
+        {
+            cellGrid.setRunState(false);
+            cellGrid.next();
+
+
+            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
+            {
+                scnRunning = false;
+
+                //End message
+                MessageBox msg = new MessageBox(display.getActiveShell(), SWT.OK);
+                msg.setMessage("Scenario completed!");
+                cellGrid.setRunState(false);
+                msg.open();
+
+            }
+            else
+            {
+                redraw();
+                cellGrid.incrementGenerations();
+            }
+
+        }
+
+        redraw();
+        cellGrid.next();
+        cellGrid.incrementGenerations();
+        updateGenLabel();
+    }
+
+    /**
+     * Set a pause while a scenario is played.
+     * @param state true - set pause
+     */
+    public void setScnPause(boolean state)
+    {
+        scnPaused = state;
+    }
+
+
+    /**
+     * Is the scenario running at the moment
+     * @return true - scenario is running
+     *         false - scenario isn't running (normal game mode)
+     */
+    public synchronized boolean isScnRunning()
+    {
+        return scnRunning;
+    }
 
 }
 

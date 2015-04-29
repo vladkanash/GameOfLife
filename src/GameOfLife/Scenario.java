@@ -6,7 +6,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Created by user on 01.04.2015.
+ * Created by Vlad Kanash on 01.04.2015.
  */
 
 
@@ -90,10 +90,10 @@ public class Scenario {
      */
     public int getFirstGeneration()
     {
-        Iterator it = entryList.iterator();
+        Iterator<ScenarioEntry> it = entryList.iterator();
         if (!it.hasNext()) return 0;
 
-        return ((ScenarioEntry)it.next()).getGeneration();
+        return (it.next()).getGeneration();
     }
 
     /**
@@ -117,28 +117,25 @@ public class Scenario {
      * @return true - cells were successfully placed/deleted
      *         false - entry list is empty (no more actions from this scenario can be applied).
      */
-    public boolean checkForEntries() {
-
-
-
-
-
+    public boolean checkForEntries()
+    {
         ScenarioEntry entry;
-        Iterator iter = entryList.iterator();
+        Iterator<ScenarioEntry> iter = entryList.iterator();
         if (!iter.hasNext()) return false;
-        entry = (ScenarioEntry) iter.next();
+        entry = iter.next();
 
         while (entry.getGeneration() < grid.getGenerations()) {
             if (!iter.hasNext()) return false;
-            entry = (ScenarioEntry) iter.next();
+            entry = iter.next();
         }
+
 
 
         if (entry.getGeneration() == grid.getGenerations()) {
             do {
                 grid.setCell(entry.getPoint().x, entry.getPoint().y, entry.getAction());
                 if (!iter.hasNext()) return false;
-                entry = (ScenarioEntry) iter.next();
+                entry = iter.next();
 
             } while (entry.getGeneration() == grid.getGenerations());
 
@@ -164,10 +161,10 @@ public class Scenario {
 
             outStream.close();
 
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             e.printStackTrace();
-        } catch (NullPointerException e) {
-            e.printStackTrace();
+
         }
     }
 
@@ -184,7 +181,7 @@ public class Scenario {
             entryList.clear();
 
 
-            entryList = (LinkedHashSet) inStream.readObject();
+            entryList = (LinkedHashSet<ScenarioEntry>)inStream.readObject();
             lastGen = (int) inStream.readObject();
 
 
@@ -192,11 +189,7 @@ public class Scenario {
 
             setInitGeneration();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NullPointerException e) {
+        } catch (IOException | ClassNotFoundException | NullPointerException e) {
             e.printStackTrace();
         }
     }
@@ -205,11 +198,12 @@ public class Scenario {
      * Sets the cell grid generation same as the first generation of the scenario.
      * (Preparing grid for the scenario playing)
      */
-    void setInitGeneration() {
-        Iterator iter = entryList.iterator();
+    void setInitGeneration()
+    {
+        Iterator<ScenarioEntry> iter = entryList.iterator();
         if (!iter.hasNext()) return;
 
-        ScenarioEntry entry = (ScenarioEntry) iter.next();
+        ScenarioEntry entry = iter.next();
         grid.setGenerationCount(entry.getGeneration());
     }
 }

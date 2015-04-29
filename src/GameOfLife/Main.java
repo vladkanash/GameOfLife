@@ -6,15 +6,12 @@ package GameOfLife;
  */
 
 
-import com.sun.prism.paint.Stop;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.*;
-
 import  org.eclipse.swt.layout.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import java.lang.String;
-
 
 
 /**
@@ -25,7 +22,7 @@ public class Main
 
     final static String PlayImagePath = "Play.png";   //
     final static String StopImagePath = "Pause.png";  // Button images
-    final static String StepImagePath = "Step.png";  //
+    final static String StepImagePath = "Step.png";   //
 
     /**
      * App window
@@ -50,13 +47,20 @@ public class Main
 
 
     /**
+     * Cell grid contains game logic (server part).
+     */
+    private CellGrid grid;
+
+    /**
      *
      * @param display parent display
      */
-    public Main(Display display)
+    public Main(Display display, CellGrid grid)
     {
 
         shell = new Shell(display);
+        this.grid = grid;
+
 
         shell.setText("Game of Life");
         shell.pack();
@@ -68,14 +72,18 @@ public class Main
 
         initWidgets();
 
-        game = new GameBoard(shell, genLabel);
 
+        game = new GameBoard(shell, genLabel, grid);
 
         shell.open();
+
+        game.updateZoomOffset();
 
         while (!shell.isDisposed())
             if (!display.readAndDispatch())
                 display.sleep();
+
+        display.dispose();
     }
 
 
@@ -84,6 +92,7 @@ public class Main
      */
     public void initWidgets()
     {
+
         //Toolbar buttons
         ToolBar mainToolBar = new ToolBar(shell, SWT.WRAP | SWT.RIGHT );
 
@@ -95,7 +104,8 @@ public class Main
             @Override
             public void widgetSelected(SelectionEvent e)
             {
-                game.setRunState(true);
+                if (game.isScnRunning()) game.setScnPause(false);
+                else grid.setRunState(true);
             }
 
             @Override
@@ -113,7 +123,8 @@ public class Main
             @Override
             public void widgetSelected(SelectionEvent e)
             {
-                game.setRunState(false);
+                if (game.isScnRunning()) game.setScnPause(true);
+                else grid.setRunState(false);
             }
 
             @Override
@@ -131,21 +142,19 @@ public class Main
             @Override
             public void widgetSelected(SelectionEvent e)
             {
-                game.setRunState(false);
-                game.nextGeneration();
-
                 stop.setSelection(true);
                 start.setSelection(false);
+
+                if (game.isScnRunning()) game.setScnPause(true);
+                else grid.setRunState(false);
+
+                game.makeStep();
             }
 
             @Override
             public void widgetDefaultSelected(SelectionEvent e)
             {
-                game.setRunState(false);
-                game.nextGeneration();
-
-                stop.setSelection(true);
-                start.setSelection(false);
+                widgetSelected(e);
             }
         });
 
@@ -173,10 +182,10 @@ public class Main
             {
                 switch (speedScale.getSelection())
                 {
-                    case 1:{game.setDelay(800); break;}
-                    case 2:{game.setDelay(400); break;}
-                    case 3:{game.setDelay(150); break;}
-                    case 4:{game.setDelay(20);  break;}
+                    case 1:{grid.setDelay(800); break;}
+                    case 2:{grid.setDelay(400); break;}
+                    case 3:{grid.setDelay(150); break;}
+                    case 4:{grid.setDelay(20);  break;}
                     default: break;
                 }
             }
@@ -241,42 +250,69 @@ public class Main
 
         Menu gameMenu = new Menu(shell, SWT.DROP_DOWN);
 
+        //Add client button
+        MenuItem demo = new MenuItem(gameMenu, SWT.PUSH);      //Reset game
+        demo.setText("&Add client (DEMO)");
+        demo.addSelectionListener(new SelectionListener()
+        {
+            @Override
+            public void widgetSelected(SelectionEvent e)
+            {
+
+                Thread runnable = new Thread("New thread")    //Новый поток
+                {
+                    public void run()
+                    {
+                        Display disp = new Display();
+                        new Main(disp, grid);
+
+                    }
+                };
+
+                runnable.start();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
+
+
         MenuItem reset = new MenuItem(gameMenu, SWT.PUSH);      //Reset game
         reset.setText("&Reset");
         reset.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 game.resetGame();
-                game.setRunState(false);
+                grid.setRunState(false);
                 start.setSelection(false);
                 stop.setSelection(true);
-                game.redraw();
+                //game.redraw();
             }
 
             @Override
             public void widgetDefaultSelected(SelectionEvent e) {
-                game.resetGame();
-                game.setRunState(false);
-                start.setSelection(false);
-                stop.setSelection(true);
-                game.redraw();
+                widgetSelected(e);
             }
         });
+
 
         final MenuItem NoGrid = new MenuItem(gameMenu, SWT.CHECK);   //Draw grid on/off
         NoGrid.setText("Show grid");
         NoGrid.setSelection(true);
-        NoGrid.addSelectionListener(new SelectionListener() {
+        NoGrid.addSelectionListener(new SelectionListener()
+        {
             @Override
-            public void widgetSelected(SelectionEvent e) {
+            public void widgetSelected(SelectionEvent e)
+            {
                 game.setGridState(NoGrid.getSelection());
-                game.redraw();
             }
 
             @Override
-            public void widgetDefaultSelected(SelectionEvent e) {
-                game.setGridState(NoGrid.getSelection());
-                game.redraw();
+            public void widgetDefaultSelected(SelectionEvent e)
+            {
+                widgetSelected(e);
             }
         });
 
@@ -385,9 +421,11 @@ public class Main
             @Override
             public void widgetSelected(SelectionEvent e)
             {
-                for (int i=0; i<100; i++)
+
+                for (int i = 0; i< 100; i++)
                 {
-                    game.nextGeneration();
+                    grid.next();
+                    grid.incrementGenerations();
                 }
             }
 
@@ -432,12 +470,13 @@ public class Main
                 game.setRecordState(Rec.getSelection());
                 stop.setSelection(true);
                 start.setSelection(false);
-                game.setRunState(false);
+                grid.setRunState(false);
 
                 if (Rec.getSelection())
                 {
 
                     Zoom.setEnabled(false);
+                    game.stopScenarioPlaying();
                 }
 
                 else
@@ -489,9 +528,6 @@ public class Main
                 String selected = fd.open();
                 replay.setEnabled(true);
                 game.runScenario(selected, sp);
-
-
-
                 //sp.setVisible(true);
             }
 
@@ -519,59 +555,41 @@ public class Main
 
 
 
-
-
-
-
-
-
-
         Scenario.setMenu(ScenarioMenu);
 
 
+        shell.addListener(SWT.Close, event -> {
+                stop.setSelection(true);
 
-
-
-        shell.addListener(SWT.Close, new Listener()                           //save request before exiting
-        {
-            public void handleEvent(Event event)
-            {
-
-                if (!game.isSaved())
+                MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
+                messageBox.setMessage("Save the game before exit?");
+                messageBox.setText("Exiting Application");
+                int response = messageBox.open();
+                if (response == SWT.YES)
                 {
-                    stop.setSelection(true);
 
-                    MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
-                    messageBox.setMessage("Save the game before exit?");
-                    messageBox.setText("Exiting Application");
-                    int response = messageBox.open();
-                    if (response == SWT.YES)
-                    {
+                    event.doit = false;
 
-                        event.doit = false;
+                    FileDialog fd = new FileDialog(shell, SWT.SAVE);
+                    fd.setFilterPath("C:/");
+                    fd.setOverwrite(true);
+                    String[] filterExt = {"*.gol"};
+                    String[] extName = {"Game of Life pattern (*.gol)"};
+                    fd.setFilterNames(extName);
+                    fd.setFilterExtensions(filterExt);
+                    String selected = fd.open();
+                    game.saveGame(selected);
 
-                        FileDialog fd = new FileDialog(shell, SWT.SAVE);
-                        fd.setFilterPath("C:/");
-                        fd.setOverwrite(true);
-                        String[] filterExt = {"*.gol"};
-                        String[] extName = {"Game of Life pattern (*.gol)"};
-                        fd.setFilterNames(extName);
-                        fd.setFilterExtensions(filterExt);
-                        String selected = fd.open();
-                        game.saveGame(selected);
-
-                    } else if (response == SWT.CANCEL)
-                    {
-                        event.doit = false;
-                    }
+                } else if (response == SWT.CANCEL) {
+                    event.doit = false;
                 }
-            }
         });
 
         Game.setMenu(gameMenu);
 
 
-        Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );         //Saved patterns
+        //Saved patterns
+        Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );
 
         MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
         glider.setText("Glider");
@@ -656,8 +674,18 @@ public class Main
     public static void main(String[] args)
     {
         Display display = new Display();
-        new Main(display);
-        display.dispose();
+
+
+        //game logic thread
+        CellGrid server= new CellGrid();
+        Thread t =  new Thread(server, "Game logic thread");
+        t.setDaemon(true);
+        t.start();
+
+
+        //GUI
+        new Main(display, server);
+
     }
 
 }
