@@ -270,7 +270,6 @@ public class CellGrid implements Runnable
         }
 
 
-
         //Delete cells which are not to be drawn
         Enum = currentShape.keys();
         while( Enum.hasMoreElements() )
@@ -496,6 +495,5 @@ public class CellGrid implements Runnable
     {
         return this.inGame;
     }
-
 
 }

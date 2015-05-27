@@ -1,9 +1,11 @@
 package GameOfLife;
 
+
 import org.eclipse.swt.graphics.Point;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.*;
 
 /**
  * Created by Vlad Kanash on 01.04.2015.
@@ -151,20 +153,34 @@ public class Scenario {
     public void saveScenario(String filename) {
         if (filename == null) return;
 
+        Writer writer = null;
+
         try {
-            FileOutputStream fos = new FileOutputStream(filename);
-            ObjectOutputStream outStream = new ObjectOutputStream(fos);
+            writer = new FileWriter(filename);
 
+            for (ScenarioEntry entry : entryList)
+            {
+                writer.write(entry.toString());
 
-            outStream.writeObject(entryList);
-            outStream.writeObject(lastGen);
-
-            outStream.close();
-
-        } catch (IOException e)
+            }
+            writer.write("LG" + lastGen);
+            writer.write(System.getProperty("line.separator"));
+            writer.flush();
+        } catch (Exception e)
         {
             e.printStackTrace();
-
+        } finally
+        {
+            if (writer != null)
+            {
+                try
+                {
+                    writer.close();
+                } catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 
@@ -173,24 +189,65 @@ public class Scenario {
      * @param filename .scn filename
      */
     public synchronized void loadScenario(String filename) {
-        try {
-            FileInputStream fis = new FileInputStream(filename);
-            ObjectInputStream inStream = new ObjectInputStream(fis);
+        if (filename == null) return;
+
+        //Analyzer fileInfo = new Analyzer(filename);
 
 
-            entryList.clear();
+        FileReader fr;
+        BufferedReader reader;
+        String buffer = new String();
 
 
-            entryList = (LinkedHashSet<ScenarioEntry>)inStream.readObject();
-            lastGen = (int) inStream.readObject();
 
+        entryList.clear();
+        try
+        {
 
-            inStream.close();
+            fr = new FileReader(filename);
+            reader = new BufferedReader(fr);
+
+            //for (int k = 0; k < scalaInfo.longestGameNum(); k++)    //reads the longest game
+                buffer = reader.readLine();
+
+            LinkedList<Integer> numbers = new LinkedList<Integer>();
+
+            Pattern nums = Pattern.compile("\\d+");
+            Pattern actions = Pattern.compile("[TF]");
+
+            Matcher m = nums.matcher(buffer);
+            Matcher a = actions.matcher(buffer);
+
+            while (m.find())
+            {
+                numbers.add(Integer.valueOf(m.group()));
+            }
+
+            int i = 0;
+
+            while (a.find())
+            {
+                Point coords = new Point(numbers.get(i+1), numbers.get(i+2));
+                boolean act;
+
+                //action value (T or F)
+                act = a.group().equals("T");
+
+                addEntry(numbers.get(i),coords, act);
+                i += 3;
+            }
+
+            reader.close();
+            fr.close();
+
+            lastGen = numbers.getLast();
 
             setInitGeneration();
 
-        } catch (IOException | ClassNotFoundException | NullPointerException e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
+
         }
     }
 
@@ -200,11 +257,95 @@ public class Scenario {
      */
     void setInitGeneration()
     {
+        //MakeBigFile();
+
         Iterator<ScenarioEntry> iter = entryList.iterator();
         if (!iter.hasNext()) return;
 
         ScenarioEntry entry = iter.next();
         grid.setGenerationCount(entry.getGeneration());
+    }
+
+
+    private void GenerateRandomScenario()
+    {
+        Random generator = new Random();
+
+        entryList.clear();
+
+        int steps = generator.nextInt(20);
+        int gen = generator.nextInt(100);
+        int lineCount = generator.nextInt(100) + 200;
+        boolean action = true;
+
+        for (int i = 0; i < steps; i++)
+        {
+            int X = generator.nextInt(600) + 800;
+            int Y = generator.nextInt(400) + 500;
+            for (int j = 0; j< lineCount; j++)
+            {
+               //Double x = generator.nextGaussian() * 2000;
+               //Double y = generator.nextGaussian() * 1000;
+
+                Point coords = new Point(X, Y);
+
+                addEntry(gen, coords, action);
+
+                X += generator.nextInt(3) - 1;
+                Y += generator.nextInt(3) - 1;
+            }
+
+
+            int genDelay = generator.nextInt(10);
+            if (generator.nextInt(11) > 8)
+            action = false; else action = true;
+
+            gen += genDelay;
+        }
+
+        lastGen = gen;
+
+    }
+
+    private void MakeBigFile()
+    {
+        Writer writer = null;
+
+        try
+        {
+            writer = new FileWriter("BigFile2.scn");
+
+
+            for (int i = 0; i< 10000; i++)
+            {
+
+                GenerateRandomScenario();
+
+                for (ScenarioEntry entry : entryList) {
+                    writer.write(entry.toString());
+
+                }
+                writer.write("LG" + lastGen);
+                writer.write(System.getProperty("line.separator"));
+            }
+
+
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+        } finally
+        {
+            if (writer != null)
+            {
+                try
+                {
+                    writer.close();
+                } catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
+        }
     }
 }
 

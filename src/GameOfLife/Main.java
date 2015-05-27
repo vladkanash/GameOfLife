@@ -11,7 +11,12 @@ import org.eclipse.swt.widgets.*;
 import  org.eclipse.swt.layout.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
+import scala.Tuple2;
+
 import java.lang.String;
+import java.util.List;
+import java.text.DecimalFormat;
+import java.util.ListIterator;
 
 
 /**
@@ -41,15 +46,26 @@ public class Main
 
 
     /**
-     * File name for the current pattern (if it was loaded from the file)
+     * File name for the current pattern (if it was loaded from a file)
      */
     private String currentGameFile;
 
+    /**
+     * File name fo the current scenario (if it was loaded from a file)
+     */
+    private String currentScenario;
+
+    /**
+     * Contains information about the scenario file
+     */
+    private ScalaAnalyzer fileInfo;
 
     /**
      * Cell grid contains game logic (server part).
      */
     private CellGrid grid;
+
+
 
     /**
      *
@@ -197,10 +213,6 @@ public class Main
             }
         });
 
-
-        //Scenario generation spinner
-        Spinner sp = new Spinner(shell, SWT.WRAP);
-        sp.setVisible(false);
 
 
         //Generations label
@@ -458,6 +470,22 @@ public class Main
             }
         });
 
+        final MenuItem showInfo = new MenuItem(ScenarioMenu, SWT.PUSH);
+        showInfo.setEnabled(false);
+        showInfo.setText("File information");
+        showInfo.addSelectionListener(new SelectionListener() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+
+                showFileInfoBox();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
+
 
         final MenuItem Rec = new MenuItem(ScenarioMenu, SWT.CHECK);   //Save the game
         Rec.setSelection(false);
@@ -493,12 +521,19 @@ public class Main
                     fd.setFilterExtensions(filterExt);
                     String selected = fd.open();
 
+                    if (selected == null) return;
+
                     game.saveScenario(selected);
+
+                    currentScenario = selected;
 
                     game.setRecordState(Rec.getSelection());
 
                     replay.setEnabled(true);
+                    showInfo.setEnabled(true);
                     Zoom.setEnabled(true);
+
+                    fileInfo = new ScalaAnalyzer(selected);
                 }
             }
 
@@ -509,31 +544,43 @@ public class Main
             }
         });
 
-        final MenuItem Run = new MenuItem(ScenarioMenu, SWT.PUSH);   //Save the game
+
+        final MenuItem Run = new MenuItem(ScenarioMenu, SWT.PUSH);
         Run.setSelection(false);
         Run.setText("Load");
-        Run.addSelectionListener(new SelectionListener()
-        {
+        Run.addSelectionListener(new SelectionListener() {
             @Override
-            public void widgetSelected(SelectionEvent e)
-            {
+            public void widgetSelected(SelectionEvent e) {
                 FileDialog fd = new FileDialog(shell, SWT.OPEN);
                 fd.setFilterPath("C:/");
                 fd.setOverwrite(true);
-                String[] filterExt = { "*.scn" };
+                String[] filterExt = {"*.scn"};
                 String[] extName = {"Game of Life scenario (*.scn)"};
                 fd.setFilterNames(extName);
                 fd.setFilterExtensions(filterExt);
 
+
                 String selected = fd.open();
+
+                if (selected == null) return;
+
+                // Saving name of the file
+                currentScenario = selected;
+
                 replay.setEnabled(true);
-                game.runScenario(selected, sp);
+                showInfo.setEnabled(true);
+
+
+                //Collecting info about the file (may take some time)
+                fileInfo = new ScalaAnalyzer(selected);
+                showFileInfoBox();
+
+                game.runScenario(selected);
                 //sp.setVisible(true);
             }
 
             @Override
-            public void widgetDefaultSelected(SelectionEvent e)
-            {
+            public void widgetDefaultSelected(SelectionEvent e) {
                 widgetSelected(e);
             }
         });
@@ -665,6 +712,73 @@ public class Main
         shell.setMenuBar(mainMenu);
 
     }
+
+    private void showFileInfoBox()
+    {
+        MessageBox msg = new MessageBox(shell, SWT.OK);
+
+        String[] filename = currentScenario.split("\\\\");
+
+        msg.setText(filename[filename.length-1] + " info");
+
+        DecimalFormat df = new DecimalFormat("#.###");
+
+
+        msg.setMessage(String.format("Total games: " + fileInfo.gamesCount() +
+                        "\nLongest game: #" + fileInfo.longestGameNum() + " (" + fileInfo.longestGameLength() + " generations)" +
+                        "\nShortest game: #" + fileInfo.shortestGameNum() + " (" + fileInfo.shortestGameLength() + " generations)" +
+                        "\nAverage game length: %s generations" +
+                        "\nAverage number of cells placed during the game: %s cells",
+                df.format(fileInfo.averageGameLength()),
+                df.format(fileInfo.averageCellsPlaced())));
+
+        msg.open();
+
+        showNotationTree();
+    }
+
+    /**
+     * Show the information about the saved notation in a tree
+     */
+    private void showNotationTree()
+    {
+        int index = 1;
+
+        List<String> stepList = fileInfo.getNotation(index);
+        List<List<Tuple2<Integer, Integer>>> cells = fileInfo.getCellsNotation(index);
+
+        final Shell shell = new Shell(this.shell.getDisplay());
+
+        shell.setLayout(new FillLayout());
+        shell.setText("Saved Notation");
+
+        Tree tree = new Tree(shell, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
+        tree.setHeaderVisible(true);
+
+        ListIterator<List<Tuple2<Integer, Integer>>> cellsIter;
+        ListIterator<String> stepsIter;
+
+
+        for (stepsIter = stepList.listIterator(), cellsIter = cells.listIterator(); cellsIter.hasNext(); )
+        {
+            TreeItem item = new TreeItem(tree, SWT.NONE);
+            item.setText(stepsIter.next());
+
+            for (Tuple2<Integer, Integer> cell : cellsIter.next())
+            {
+                TreeItem subItem = new TreeItem(item, SWT.NONE);
+                subItem.setText("at X: " + cell._1() + ", Y: " + cell._2());
+            }
+        }
+
+        //Last generation string
+        TreeItem item = new TreeItem(tree, SWT.NONE);
+        item.setText(stepList.get(stepList.size() - 1));
+
+        shell.pack();
+        shell.open();
+    }
+
 
 
     /**

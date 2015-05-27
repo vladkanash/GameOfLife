@@ -101,7 +101,9 @@ public class ScenarioEntry implements Serializable
 
     public String toString()
     {
-        return action+"G"+generation+"X"+pos.x+"Y"+pos.y;
+        if (action)
+        return "TG"+generation+"X"+pos.x+"Y"+pos.y;
+        else return "FG"+generation+"X"+pos.x+"Y"+pos.y;
     }
 
 }

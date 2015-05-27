@@ -410,16 +410,12 @@ public class GameBoard extends Canvas implements  Runnable
      * Load scenario from file and run it.
      * @param fileName .scn file name
      */
-    public void runScenario(String fileName, Spinner sp)
+    public void runScenario(String fileName)
     {
         cellGrid.clear();
         scenario.clear();
 
         scenario.loadScenario(fileName);
-
-        sp.setMaximum(scenario.getLastGeneration());
-        sp.setMinimum(scenario.getFirstGeneration());
-
 
         //redraw();
         updateGenLabel();

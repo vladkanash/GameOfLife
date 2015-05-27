@@ -28,5 +28,7 @@
       </library>
     </orderEntry>
     <orderEntry type="library" exported="" name="junit-4.11" level="project" />
+    <orderEntry type="library" name="scala-sdk-2.11.6" level="application" />
+    <orderEntry type="library" name="akka-actor_2" level="application" />
   </component>
 </module>
