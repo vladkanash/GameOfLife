@@ -1,4 +1,4 @@
-package GameOfLife;
+package gameoflife;
 
 
 import org.eclipse.swt.graphics.Point;
@@ -255,7 +255,7 @@ public class Scenario {
      * Sets the cell grid generation same as the first generation of the scenario.
      * (Preparing grid for the scenario playing)
      */
-    void setInitGeneration()
+    public void setInitGeneration()
     {
         //MakeBigFile();
 

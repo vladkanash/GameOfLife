@@ -1,4 +1,4 @@
-package GameOfLife
+package gameoflife
 //
 //import scala.io.Source
 //import scala.collection.JavaConverters._

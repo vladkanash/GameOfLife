@@ -1,4 +1,4 @@
-package GameOfLife;
+package gameoflife;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

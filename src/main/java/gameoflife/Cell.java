@@ -1,4 +1,4 @@
-package GameOfLife;
+package gameoflife;
 
 /**
  * Created by Vlad Kanash on 04.03.2015.

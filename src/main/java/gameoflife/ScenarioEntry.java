@@ -1,4 +1,4 @@
-package GameOfLife;
+package gameoflife;
 
 import org.eclipse.swt.graphics.Point;
 

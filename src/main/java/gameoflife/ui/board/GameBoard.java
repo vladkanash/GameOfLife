@@ -1,9 +1,12 @@
-package GameOfLife;
-
+package gameoflife.ui.board;
 
 /**
  * Created by Vlad Kanash on 24.02.2015.
  */
+
+import gameoflife.Cell;
+import gameoflife.CellGrid;
+import gameoflife.Scenario;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.gtk.GdkRectangle;
@@ -11,12 +14,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
 import java.util.Enumeration;
 
-
 /**
  * Represents a game field on the screen
  */
-public class GameBoard extends Canvas implements  Runnable
-{
+
+public class GameBoard extends Canvas implements  Runnable {
     /**
      * False = field without a grid.
      */
