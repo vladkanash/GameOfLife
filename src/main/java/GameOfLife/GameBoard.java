@@ -6,7 +6,7 @@ package GameOfLife;
  */
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.*;
-import org.eclipse.swt.internal.gdip.Rect;
+import org.eclipse.swt.internal.gtk.GdkRectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
 import java.util.Enumeration;
@@ -60,7 +60,7 @@ public class GameBoard extends Canvas implements  Runnable
     /**
      * Shows the area of the game field which is on the screen at the moment.
      */
-    private Rect zoomOffset;
+    private GdkRectangle zoomOffset;
 
     /**
      * Grid image. Does not has to be redrawn every time, so we save it
@@ -102,7 +102,7 @@ public class GameBoard extends Canvas implements  Runnable
         super(shell, SWT.BORDER | SWT.NO_BACKGROUND);
 
 
-        zoomOffset = new Rect();
+        zoomOffset = new GdkRectangle();
 
         BackgroundColor = new Color(shell.getDisplay(), 20, 20, 20);
         ForegroundColor = new Color(shell.getDisplay(), 0, 200, 0);
@@ -163,7 +163,7 @@ public class GameBoard extends Canvas implements  Runnable
                 {
                     case SWT.MouseDown:
                         mousePressed = true;
-                        cellState = !cellGrid.getCell(event.x / cellSize + zoomOffset.X, event.y / cellSize + zoomOffset.Y);
+                        cellState = !cellGrid.getCell(event.x / cellSize + zoomOffset.x, event.y / cellSize + zoomOffset.y);
                         drawCell(event.x, event.y, cellState);
                         break;
 
@@ -250,12 +250,12 @@ public class GameBoard extends Canvas implements  Runnable
     {
        if (cellGrid.getRunState() || scnRunning) return;
 
-        cellGrid.setCell(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y, state );
+        cellGrid.setCell(x / cellSize + zoomOffset.x, y / cellSize + zoomOffset.y, state );
 
         //add the cell info to the saved scenario.
         if (recording)
         {
-            Point pos = new Point(x / cellSize + zoomOffset.X, y / cellSize + zoomOffset.Y);
+            Point pos = new Point(x / cellSize + zoomOffset.x, y / cellSize + zoomOffset.y);
             scenario.addEntry(getGeneration(), pos, state);
         }
     }
@@ -314,7 +314,7 @@ public class GameBoard extends Canvas implements  Runnable
         while ( Enum.hasMoreElements() )
         {
             c = (Cell) Enum.nextElement();
-            e.fillRectangle((c.col-zoomOffset.X) * cellSize, (c.row - zoomOffset.Y)* cellSize, cellSize, cellSize);
+            e.fillRectangle((c.col-zoomOffset.x) * cellSize, (c.row - zoomOffset.y)* cellSize, cellSize, cellSize);
         }
 
        e.setBackground(BackgroundColor);
@@ -335,10 +335,10 @@ public class GameBoard extends Canvas implements  Runnable
      */
     public void updateZoomOffset()
     {
-        this.zoomOffset.X = (int) (0.5 * (CellGrid.gridColumns - this.getSize().x / cellSize));
-        this.zoomOffset.Y = (int) (0.5 * (CellGrid.gridRows - this.getSize().y / cellSize));
-        this.zoomOffset.Width = this.getSize().x / cellSize;
-        this.zoomOffset.Height = this.getSize().y / cellSize;
+        this.zoomOffset.x = (int) (0.5 * (CellGrid.gridColumns - this.getSize().x / cellSize));
+        this.zoomOffset.y = (int) (0.5 * (CellGrid.gridRows - this.getSize().y / cellSize));
+        this.zoomOffset.width = this.getSize().x / cellSize;
+        this.zoomOffset.height = this.getSize().y / cellSize;
 
         cellGrid.setZoomOffset(zoomOffset);
     }

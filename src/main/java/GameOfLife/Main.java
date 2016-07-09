@@ -11,7 +11,7 @@ import org.eclipse.swt.widgets.*;
 import  org.eclipse.swt.layout.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
-import scala.Tuple2;
+//import scala.Tuple2;
 
 import java.lang.String;
 import java.util.List;
@@ -58,7 +58,7 @@ public class Main
     /**
      * Contains information about the scenario file
      */
-    private ScalaAnalyzer fileInfo;
+//    private ScalaAnalyzer fileInfo;
 
     /**
      * Cell grid contains game logic (server part).
@@ -533,7 +533,7 @@ public class Main
                     showInfo.setEnabled(true);
                     Zoom.setEnabled(true);
 
-                    fileInfo = new ScalaAnalyzer(selected);
+//                    fileInfo = new ScalaAnalyzer(selected);
                 }
             }
 
@@ -572,7 +572,7 @@ public class Main
 
 
                 //Collecting info about the file (may take some time)
-                fileInfo = new ScalaAnalyzer(selected);
+//                fileInfo = new ScalaAnalyzer(selected);
                 showFileInfoBox();
 
                 game.runScenario(selected);
@@ -724,60 +724,60 @@ public class Main
         DecimalFormat df = new DecimalFormat("#.###");
 
 
-        msg.setMessage(String.format("Total games: " + fileInfo.gamesCount() +
-                        "\nLongest game: #" + fileInfo.longestGameNum() + " (" + fileInfo.longestGameLength() + " generations)" +
-                        "\nShortest game: #" + fileInfo.shortestGameNum() + " (" + fileInfo.shortestGameLength() + " generations)" +
-                        "\nAverage game length: %s generations" +
-                        "\nAverage number of cells placed during the game: %s cells",
-                df.format(fileInfo.averageGameLength()),
-                df.format(fileInfo.averageCellsPlaced())));
+//        msg.setMessage(String.format("Total games: " + fileInfo.gamesCount() +
+//                        "\nLongest game: #" + fileInfo.longestGameNum() + " (" + fileInfo.longestGameLength() + " generations)" +
+//                        "\nShortest game: #" + fileInfo.shortestGameNum() + " (" + fileInfo.shortestGameLength() + " generations)" +
+//                        "\nAverage game length: %s generations" +
+//                        "\nAverage number of cells placed during the game: %s cells",
+//                df.format(fileInfo.averageGameLength()),
+//                df.format(fileInfo.averageCellsPlaced())));
+//
+//        msg.open();
 
-        msg.open();
-
-        showNotationTree();
+//        showNotationTree();
     }
 
-    /**
-     * Show the information about the saved notation in a tree
-     */
-    private void showNotationTree()
-    {
-        int index = 1;
-
-        List<String> stepList = fileInfo.getNotation(index);
-        List<List<Tuple2<Integer, Integer>>> cells = fileInfo.getCellsNotation(index);
-
-        final Shell shell = new Shell(this.shell.getDisplay());
-
-        shell.setLayout(new FillLayout());
-        shell.setText("Saved Notation");
-
-        Tree tree = new Tree(shell, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
-        tree.setHeaderVisible(true);
-
-        ListIterator<List<Tuple2<Integer, Integer>>> cellsIter;
-        ListIterator<String> stepsIter;
-
-
-        for (stepsIter = stepList.listIterator(), cellsIter = cells.listIterator(); cellsIter.hasNext(); )
-        {
-            TreeItem item = new TreeItem(tree, SWT.NONE);
-            item.setText(stepsIter.next());
-
-            for (Tuple2<Integer, Integer> cell : cellsIter.next())
-            {
-                TreeItem subItem = new TreeItem(item, SWT.NONE);
-                subItem.setText("at X: " + cell._1() + ", Y: " + cell._2());
-            }
-        }
-
-        //Last generation string
-        TreeItem item = new TreeItem(tree, SWT.NONE);
-        item.setText(stepList.get(stepList.size() - 1));
-
-        shell.pack();
-        shell.open();
-    }
+//    /**
+//     * Show the information about the saved notation in a tree
+//     */
+//    private void showNotationTree()
+//    {
+//        int index = 1;
+//
+//        List<String> stepList = fileInfo.getNotation(index);
+//        List<List<Tuple2<Integer, Integer>>> cells = fileInfo.getCellsNotation(index);
+//
+//        final Shell shell = new Shell(this.shell.getDisplay());
+//
+//        shell.setLayout(new FillLayout());
+//        shell.setText("Saved Notation");
+//
+//        Tree tree = new Tree(shell, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
+//        tree.setHeaderVisible(true);
+//
+//        ListIterator<List<Tuple2<Integer, Integer>>> cellsIter;
+//        ListIterator<String> stepsIter;
+//
+//
+//        for (stepsIter = stepList.listIterator(), cellsIter = cells.listIterator(); cellsIter.hasNext(); )
+//        {
+//            TreeItem item = new TreeItem(tree, SWT.NONE);
+//            item.setText(stepsIter.next());
+//
+//            for (Tuple2<Integer, Integer> cell : cellsIter.next())
+//            {
+//                TreeItem subItem = new TreeItem(item, SWT.NONE);
+//                subItem.setText("at X: " + cell._1() + ", Y: " + cell._2());
+//            }
+//        }
+//
+//        //Last generation string
+//        TreeItem item = new TreeItem(tree, SWT.NONE);
+//        item.setText(stepList.get(stepList.size() - 1));
+//
+//        shell.pack();
+//        shell.open();
+//    }
 
 
 

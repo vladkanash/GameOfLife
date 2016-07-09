@@ -8,7 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.*;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.internal.gdip.Rect;
+import org.eclipse.swt.internal.gtk.GdkRectangle;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,12 +75,12 @@ public class CellGrid implements Runnable
     /**
      * Shows the area of the game field which is on the screen at the moment.
      */
-    private volatile Rect zoomOffset;
+    private volatile GdkRectangle zoomOffset;
 
 
     public CellGrid()
     {
-        zoomOffset = new Rect();
+        zoomOffset = new GdkRectangle();
         this.generations = 0;
         currentShape = new Hashtable<>();
         nextShape = new Hashtable<>();
@@ -209,32 +209,32 @@ public class CellGrid implements Runnable
 
 
             //make a tor field
-            if (col == zoomOffset.X )
+            if (col == zoomOffset.x )
             {
-                neighbours[0].x += zoomOffset.Width;
-                neighbours[3].x += zoomOffset.Width;
-                neighbours[5].x += zoomOffset.Width;
+                neighbours[0].x += zoomOffset.width;
+                neighbours[3].x += zoomOffset.width;
+                neighbours[5].x += zoomOffset.width;
             }
 
-            if (col == (zoomOffset.X + zoomOffset.Width - 1))
+            if (col == (zoomOffset.x + zoomOffset.width - 1))
             {
-                neighbours[2].x -= zoomOffset.Width;
-                neighbours[4].x -= zoomOffset.Width;
-                neighbours[7].x -= zoomOffset.Width;
+                neighbours[2].x -= zoomOffset.width;
+                neighbours[4].x -= zoomOffset.width;
+                neighbours[7].x -= zoomOffset.width;
             }
 
-            if (row == zoomOffset.Y)
+            if (row == zoomOffset.y)
             {
-                neighbours[0].y += zoomOffset.Height;
-                neighbours[1].y += zoomOffset.Height;
-                neighbours[2].y += zoomOffset.Height;
+                neighbours[0].y += zoomOffset.height;
+                neighbours[1].y += zoomOffset.height;
+                neighbours[2].y += zoomOffset.height;
             }
 
-            if (row == (zoomOffset.Y + zoomOffset.Height - 1))
+            if (row == (zoomOffset.y + zoomOffset.height - 1))
             {
-                neighbours[5].y -= zoomOffset.Height;
-                neighbours[6].y -= zoomOffset.Height;
-                neighbours[7].y -= zoomOffset.Height;
+                neighbours[5].y -= zoomOffset.height;
+                neighbours[6].y -= zoomOffset.height;
+                neighbours[7].y -= zoomOffset.height;
             }
 
 
@@ -276,8 +276,8 @@ public class CellGrid implements Runnable
         {
             cell = (Cell)Enum.nextElement();
 
-            if      (cell.col < zoomOffset.X || cell.col > (zoomOffset.X + zoomOffset.Width) ||
-                    (cell.row < zoomOffset.Y || cell.row > (zoomOffset.Y + zoomOffset.Height)))
+            if      (cell.col < zoomOffset.x || cell.col > (zoomOffset.x + zoomOffset.width) ||
+                    (cell.row < zoomOffset.y || cell.row > (zoomOffset.y + zoomOffset.height)))
             {
                 cell.neighbour = 0;
                currentShape.remove(cell);
@@ -450,7 +450,7 @@ public class CellGrid implements Runnable
      * Set the new zoom offset value
      * @param offset new offset value
      */
-    public synchronized void setZoomOffset(Rect offset)
+    public synchronized void setZoomOffset(GdkRectangle offset)
     {
         this.zoomOffset = offset;
     }
