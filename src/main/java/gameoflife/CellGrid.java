@@ -8,7 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.*;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.internal.gtk.GdkRectangle;
+import org.eclipse.swt.graphics.Rectangle;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,12 +75,12 @@ public class CellGrid implements Runnable
     /**
      * Shows the area of the game field which is on the screen at the moment.
      */
-    private volatile GdkRectangle zoomOffset;
+    private volatile Rectangle zoomOffset;
 
 
     public CellGrid()
     {
-        zoomOffset = new GdkRectangle();
+        zoomOffset = new Rectangle(0, 0, 0, 0);
         this.generations = 0;
         currentShape = new Hashtable<>();
         nextShape = new Hashtable<>();
@@ -450,7 +450,7 @@ public class CellGrid implements Runnable
      * Set the new zoom offset value
      * @param offset new offset value
      */
-    public synchronized void setZoomOffset(GdkRectangle offset)
+    public synchronized void setZoomOffset(Rectangle offset)
     {
         this.zoomOffset = offset;
     }

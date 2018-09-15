@@ -1,15 +1,11 @@
 package gameoflife.ui.board;
 
-/**
- * Created by Vlad Kanash on 24.02.2015.
- */
-
 import gameoflife.Cell;
 import gameoflife.CellGrid;
 import gameoflife.Scenario;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.*;
-import org.eclipse.swt.internal.gtk.GdkRectangle;
+
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
 import java.util.Enumeration;
@@ -18,7 +14,7 @@ import java.util.Enumeration;
  * Represents a game field on the screen
  */
 
-public class GameBoard extends Canvas implements  Runnable {
+public class GameBoard extends Canvas implements Runnable {
     /**
      * False = field without a grid.
      */
@@ -62,7 +58,7 @@ public class GameBoard extends Canvas implements  Runnable {
     /**
      * Shows the area of the game field which is on the screen at the moment.
      */
-    private GdkRectangle zoomOffset;
+    private Rectangle zoomOffset;
 
     /**
      * Grid image. Does not has to be redrawn every time, so we save it
@@ -99,26 +95,21 @@ public class GameBoard extends Canvas implements  Runnable {
      * @param shell Parent Shell
      * @param label Надпись, в которую выводится текущее поколение игры
      */
-    public GameBoard(Shell shell, Label label, CellGrid grid)
-    {
+    public GameBoard(Shell shell, Label label, CellGrid grid) {
         super(shell, SWT.BORDER | SWT.NO_BACKGROUND);
 
-
-        zoomOffset = new GdkRectangle();
+        zoomOffset = new Rectangle(0, 0, 0, 0);
 
         BackgroundColor = new Color(shell.getDisplay(), 20, 20, 20);
         ForegroundColor = new Color(shell.getDisplay(), 0, 200, 0);
 
-
         this.genLabel = label;
         this.display = shell.getDisplay();
-
 
         this.cellGrid = grid;
         this.scenario = new Scenario(cellGrid);
 
-
-        //Layout information
+        //Layout data
         GridData data = new GridData();
         data.horizontalSpan = 5;
         data.horizontalAlignment = GridData.FILL;
@@ -126,7 +117,6 @@ public class GameBoard extends Canvas implements  Runnable {
         data.grabExcessHorizontalSpace = true;
         data.grabExcessVerticalSpace = true;
         setLayoutData(data);
-
 
         this.addPaintListener(e -> {
             //Создаем новый обьект только когда необходимо (если изменился размер поля)
