@@ -344,19 +344,15 @@ public class CellGrid implements Runnable
      */
     public synchronized void setCell( int col, int row, boolean c )
     {
-        try
-        {
+        try {
             Cell cell = grid[col][row];
-            if ( c )
-            {
+            if (c) {
                 currentShape.put(cell, cell);
-            } else
-            {
+            } else {
                 currentShape.remove(cell);
             }
-        } catch (ArrayIndexOutOfBoundsException e)
-        {
-            ////
+        } catch (ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
         }
     }
 
@@ -365,27 +361,22 @@ public class CellGrid implements Runnable
      * Save the current pattern
      * @param fileName file name
      */
-    public synchronized void save(String fileName)
-    {
+    public synchronized void save(String fileName) {
         if (fileName == null) return;
 
         try {
             FileOutputStream fos = new FileOutputStream(fileName);
             ObjectOutputStream outStream = new ObjectOutputStream(fos);
 
-
             outStream.writeObject(generations);
             outStream.writeObject(currentShape);
 
             outStream.close();
 
-        } catch (IOException | NullPointerException e)
-        {
+        } catch (IOException | NullPointerException e) {
             e.printStackTrace();
         }
     }
-
-
 
     /**
      * Load pattern from file
@@ -426,14 +417,8 @@ public class CellGrid implements Runnable
      * Get the generations count since the game started
      * @return current generation count
      */
-    public synchronized int getGenerations()
-    {
-        try {
-            return generations;
-        }catch (NullPointerException e)
-        {
-            return 0;
-        }
+    public synchronized int getGenerations() {
+        return generations;
     }
 
     /**

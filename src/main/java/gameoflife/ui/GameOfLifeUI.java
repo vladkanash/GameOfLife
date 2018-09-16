@@ -1,72 +1,70 @@
 package gameoflife.ui;
 
-/**
- * Created by Vlad Kanash on 18.02.2015.
- */
-
-import gameoflife.CellGrid;
+import gameoflife.SavingManager;
+import gameoflife.events.ActionManager;
+import gameoflife.events.action.ChangeRunStateAction;
+import gameoflife.events.listener.GenLabelListener;
+import gameoflife.events.listener.StartButtonListener;
+import gameoflife.events.listener.StopButtonListener;
 import gameoflife.ui.board.GameBoard;
-import gameoflife.config.MainConfig;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.*;
-import  org.eclipse.swt.layout.*;
+import org.eclipse.swt.layout.*;
 import org.eclipse.swt.events.*;
 
 import java.lang.String;
-import java.util.ListResourceBundle;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /**
  * UI main class
  */
-public class GameOfLifeUI
-{
+public class GameOfLifeUI {
 
-    private Shell shell;
-
-    private ToolItem startButton;
-    private ToolItem stopButton;
-    private Label genLabel;
+    private final ActionManager actionManager = ActionManager.INSTANCE;
+    private final SavingManager savingManager;
+    private final Shell shell;
 
     private final GameBoard game;
-    private String currentGameFile;
-    private final CellGrid grid;
 
-    private final ListResourceBundle stringConfig;
+    private final static String BUNDLE_PATH = "gameoflife.config.MainConfig";
+    private final ResourceBundle gameConfig = ResourceBundle.getBundle(BUNDLE_PATH);
 
-
-    public GameOfLifeUI(Display display, CellGrid grid)
-    {
-        this.shell = new Shell(display);
-        this.grid = grid;
-
-        this.stringConfig = new MainConfig();
-
-        shell.setText(stringConfig.getString("gameTitle"));
-        shell.pack();
-        shell.setSize((Integer) stringConfig.getObject("initialWidth"),
-                (Integer) stringConfig.getObject("initialHeight"));
-
-        GridLayout layout = new GridLayout(5, false);
-        shell.setLayout(layout);
-
-        initWidgets();
-
-        game = new GameBoard(shell, genLabel, grid);
-
-        shell.open();
+    public GameOfLifeUI(Shell shell, GameBoard gameBoard) {
+        this.shell = shell;
+        this.game = gameBoard;
+        this.savingManager = new SavingManager(game);
 
         game.updateZoomOffset();
 
-        while (!shell.isDisposed())
-            if (!display.readAndDispatch())
-                display.sleep();
+        initShell();
+        initWidgets();
+        startDisplayCycle(shell.getDisplay());
+    }
 
+    private void startDisplayCycle(Display display) {
+        shell.open();
+        while (!shell.isDisposed())
+            if (!display.readAndDispatch()) {
+                display.sleep();
+            }
         display.dispose();
     }
 
-    private void initWidgets()
-    {
-        final ToolBar mainToolBar = new ToolBar(shell, SWT.WRAP | SWT.RIGHT );
+    private void initShell() {
+        shell.setText(gameConfig.getString("gameTitle"));
+        shell.pack();
+        
+        var initialWidth = (Integer) gameConfig.getObject("initialWidth");
+        var initialHeight = (Integer) gameConfig.getObject("initialHeight");
+        shell.setSize(initialWidth, initialHeight);
+
+        GridLayout layout = new GridLayout(5, false);
+        shell.setLayout(layout);
+    }
+
+    private void initWidgets() {
+        final ToolBar mainToolBar = new ToolBar(shell, SWT.WRAP | SWT.RIGHT);
 
         initStartButton(mainToolBar);
         initStopButton(mainToolBar);
@@ -83,7 +81,7 @@ public class GameOfLifeUI
 
     private void initCloseMessageBox() {
         shell.addListener(SWT.Close, event -> {
-            grid.setRunState(false);
+            game.setRunState(false);
 
             final MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
             messageBox.setMessage("Save the game before exit?");
@@ -108,7 +106,7 @@ public class GameOfLifeUI
     }
 
     private Menu initZoomMenu() {
-        final Menu zoomMenu = new Menu(shell, SWT.DROP_DOWN );
+        final Menu zoomMenu = new Menu(shell, SWT.DROP_DOWN);
 
         UITools.initMenuItem(zoomMenu, "Huge", 0, SWT.PUSH, () -> game.zoom(30));
         UITools.initMenuItem(zoomMenu, "Normal", 0, SWT.PUSH, () -> game.zoom(10));
@@ -119,14 +117,14 @@ public class GameOfLifeUI
     }
 
     private Menu initShapesMenu() {
-        final Menu shapeMenu  = new Menu(shell, SWT.DROP_DOWN );
+        final Menu shapeMenu = new Menu(shell, SWT.DROP_DOWN);
 
         final MenuItem glider = new MenuItem(shapeMenu, SWT.PUSH);
         glider.setText("Glider");
 
         final MenuItem gun = new MenuItem(shapeMenu, SWT.PUSH);
         gun.setText("Gun");
-        //TODO: More shapes
+
         return shapeMenu;
     }
 
@@ -165,76 +163,48 @@ public class GameOfLifeUI
 
     private Menu initGameMenu() {
 
-        final MenuAction resetGame = (e) -> {
+        final Consumer<SelectionEvent> resetGame = (e) -> {
             game.resetGame();
-            grid.setRunState(false);
-            startButton.setSelection(false);
-            stopButton.setSelection(true);
+            game.setRunState(false);
+            actionManager.sendAction(new ChangeRunStateAction(false));
         };
 
-        final MenuAction triggerGrid = e -> {
+        final Consumer<SelectionEvent> triggerGrid = e -> {
             MenuItem item = (MenuItem) e.widget;
-            boolean sel = item.getSelection();
-            boolean enabled = item.getEnabled();
             game.setGridState(item.getSelection());
         };
 
-        final MenuAction loadGame = (e) -> {
-            FileDialog fd = new FileDialog(shell, SWT.OPEN);
-            fd.setFilterPath("C:/");
-            fd.setOverwrite(true);
-            String[] filterExt = { "*.gol" };
-            String[] extName = {"Game of Life pattern (*.gol)"};
-            fd.setFilterNames(extName);
-            fd.setFilterExtensions(filterExt);
-            String selected = fd.open();
-            game.loadGame(selected);
-            currentGameFile = selected;
+        final Consumer<SelectionEvent> loadGame = (e) -> {
+            game.setRunState(false);
+            actionManager.sendAction(new ChangeRunStateAction(false));
+            String selected = UITools.createFileDialog(shell, SWT.OPEN).open();
+            savingManager.loadGame(selected);
         };
 
-        final MenuAction saveGame = (e) -> {
-            if (currentGameFile != null) {
-                game.saveGame(currentGameFile);
+        final Consumer<SelectionEvent> saveGame = (e) -> {
+            if (savingManager.getCurrentFilepath() != null) {
+                savingManager.saveGame();
                 return;
             }
-            stopButton.setSelection(true);
-
-            FileDialog fd = new FileDialog(shell, SWT.SAVE);
-            fd.setFilterPath("C:/");
-            fd.setOverwrite(true);
-            String[] filterExt = { "*.gol" };
-            String[] extName = {"Game of Life pattern (*.gol)"};
-            fd.setFilterNames(extName);
-            fd.setFilterExtensions(filterExt);
-            String selected = fd.open();
-
-            game.saveGame(selected);
-            currentGameFile = selected;
+            game.setRunState(false);
+            actionManager.sendAction(new ChangeRunStateAction(false));
+            String selected = UITools.createFileDialog(shell, SWT.SAVE).open();
+            savingManager.saveGameAs(selected);
         };
 
-        final MenuAction saveGameAs = (e) -> {
-            grid.setRunState(false);
-
-            FileDialog fd = new FileDialog(shell, SWT.SAVE);
-            fd.setFilterPath("C:/");
-            fd.setOverwrite(true);
-
-            String[] filterExt = { "*.gol" };
-            String[] extName = {"Game of Life pattern (*.gol)"};
-
-            fd.setFileName(currentGameFile);
-            fd.setFilterNames(extName);
-            fd.setFilterExtensions(filterExt);
-            String selected = fd.open();
-
-            game.saveGame(selected);
-            currentGameFile = selected;
+        final Consumer<SelectionEvent> saveGameAs = (e) -> {
+            game.setRunState(false);
+            actionManager.sendAction(new ChangeRunStateAction(false));
+            var saveDialog = UITools.createFileDialog(shell, SWT.SAVE);
+            saveDialog.setFileName(savingManager.getCurrentFilepath());
+            String selected = saveDialog.open();
+            savingManager.saveGameAs(selected);
         };
 
-        final MenuAction jumpForward  = (e) -> {
-            for (int i = 0; i< 100; i++) {
-                grid.next();
-                grid.incrementGenerations();
+        final Consumer<SelectionEvent> jumpForward = (e) -> {
+            for (int i = 0; i < 100; i++) {
+                game.next();
+                game.incrementGenerations();
             }
         };
 
@@ -242,7 +212,7 @@ public class GameOfLifeUI
 
         UITools.initMenuItem(gameMenu, "&Reset", 0, SWT.PUSH, resetGame);
         UITools.initMenuItem(gameMenu, "&Open\tCtrl+O", SWT.CTRL | 'O', SWT.PUSH, loadGame);
-        UITools.initMenuItem(gameMenu, "&Save\tShift+Ctrl+S", SWT.CTRL+ SWT.SHIFT + 'S', SWT.PUSH, saveGame);
+        UITools.initMenuItem(gameMenu, "&Save\tShift+Ctrl+S", SWT.CTRL + SWT.SHIFT + 'S', SWT.PUSH, saveGame);
         UITools.initMenuItem(gameMenu, "Save &as\tCtrl+S", SWT.SHIFT + 's', SWT.PUSH, saveGameAs);
         UITools.initMenuItem(gameMenu, "Jump 100 steps forward", 0, SWT.PUSH, jumpForward);
 
@@ -253,12 +223,13 @@ public class GameOfLifeUI
     }
 
     private void initGenerationLabel() {
-        genLabel = new Label(shell, SWT.NONE);
-        genLabel.setText(String.format(stringConfig.getString("generationLabel") + "%06d", 0));
+        Label genLabel = new Label(shell, SWT.NONE);
+        genLabel.setText(String.format(gameConfig.getString("generationLabel") + "%06d", 0));
         GridData gridData = new GridData();
         gridData.horizontalAlignment = GridData.END;
         gridData.horizontalIndent = 40;
         genLabel.setLayoutData(gridData);
+        actionManager.addListener(new GenLabelListener(genLabel));
     }
 
     private void initSpeedScale() {
@@ -272,11 +243,24 @@ public class GameOfLifeUI
             @Override
             public void widgetSelected(SelectionEvent e) {
                 switch (speedScale.getSelection()) {
-                    case 1:{grid.setDelay(800); break;}
-                    case 2:{grid.setDelay(400); break;}
-                    case 3:{grid.setDelay(150); break;}
-                    case 4:{grid.setDelay(20);  break;}
-                    default: break;
+                    case 1: {
+                        game.setDelay(800);
+                        break;
+                    }
+                    case 2: {
+                        game.setDelay(400);
+                        break;
+                    }
+                    case 3: {
+                        game.setDelay(150);
+                        break;
+                    }
+                    case 4: {
+                        game.setDelay(20);
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
 
@@ -289,7 +273,7 @@ public class GameOfLifeUI
 
     private void initSpeedLabel() {
         final Label speedLabel = new Label(shell, SWT.WRAP);
-        speedLabel.setText(stringConfig.getString("speedLabel"));
+        speedLabel.setText(gameConfig.getString("speedLabel"));
         GridData speedData = new GridData();
         speedData.horizontalIndent = 40;
         speedLabel.setLayoutData(speedData);
@@ -297,20 +281,21 @@ public class GameOfLifeUI
 
     private void initStepButton(ToolBar mainToolBar) {
         UITools.initImageButton(mainToolBar, "stepImage", SWT.PUSH, () -> {
-            stopButton.setSelection(true);
-            startButton.setSelection(false);
-            grid.setRunState(false);
+            actionManager.sendAction(new ChangeRunStateAction(false));
+            game.setRunState(false);
             game.makeStep();
         });
     }
 
     private void initStopButton(final ToolBar mainToolBar) {
-        this.startButton = UITools.initImageButton(mainToolBar, "pauseImage", SWT.RADIO,
-                () -> grid.setRunState(false));
+        var button = UITools.initImageButton(mainToolBar, "pauseImage", SWT.RADIO,
+                () -> game.setRunState(false));
+        actionManager.addListener(new StopButtonListener(button));
     }
 
     private void initStartButton(final ToolBar mainToolBar) {
-        this.stopButton = UITools.initImageButton(mainToolBar, "playImage", SWT.RADIO,
-                () -> grid.setRunState(true));
+        var button = UITools.initImageButton(mainToolBar, "playImage", SWT.RADIO,
+                () -> game.setRunState(true));
+        actionManager.addListener(new StartButtonListener(button));
     }
 }

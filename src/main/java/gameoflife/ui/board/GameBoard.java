@@ -3,6 +3,9 @@ package gameoflife.ui.board;
 import gameoflife.Cell;
 import gameoflife.CellGrid;
 import gameoflife.Scenario;
+import gameoflife.events.ActionManager;
+import gameoflife.events.action.SetLabelTextAction;
+import gameoflife.events.action.UpdateGenLabelAction;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.*;
 
@@ -15,6 +18,9 @@ import java.util.Enumeration;
  */
 
 public class GameBoard extends Canvas implements Runnable {
+
+    private ActionManager actionManager = ActionManager.INSTANCE;
+
     /**
      * False = field without a grid.
      */
@@ -25,12 +31,6 @@ public class GameBoard extends Canvas implements Runnable {
      * Current cell size (in pixels).
      */
     private int cellSize = 15;
-
-
-    /**
-     * SWT label with the current generations count.
-     */
-    private final Label genLabel;
 
     /**
      * Parent display
@@ -93,21 +93,16 @@ public class GameBoard extends Canvas implements Runnable {
 
     /**
      * @param shell Parent Shell
-     * @param label Надпись, в которую выводится текущее поколение игры
      */
-    public GameBoard(Shell shell, Label label, CellGrid grid) {
+    public GameBoard(Shell shell) {
         super(shell, SWT.BORDER | SWT.NO_BACKGROUND);
-
-        zoomOffset = new Rectangle(0, 0, 0, 0);
-
-        BackgroundColor = new Color(shell.getDisplay(), 20, 20, 20);
-        ForegroundColor = new Color(shell.getDisplay(), 0, 200, 0);
-
-        this.genLabel = label;
         this.display = shell.getDisplay();
+        this.cellGrid = new CellGrid();
 
-        this.cellGrid = grid;
         this.scenario = new Scenario(cellGrid);
+        this.zoomOffset = new Rectangle(0, 0, 0, 0);
+        this.BackgroundColor = new Color(display, 20, 20, 20);
+        this.ForegroundColor = new Color(display, 0, 200, 0);
 
         //Layout data
         GridData data = new GridData();
@@ -136,7 +131,6 @@ public class GameBoard extends Canvas implements Runnable {
             imageGC.drawImage(gridImage, 0, 0);   //Рисуем сетку (загружаем сохраненную)
             drawCells(imageGC); //Рисуем клетки
 
-
             e.gc.drawImage(image,0,0);   //Выводим изображение на экран
 
             imageGC.dispose();
@@ -144,8 +138,7 @@ public class GameBoard extends Canvas implements Runnable {
 
         });
 
-        Listener mouseListener = new Listener()
-        {
+        Listener mouseListener = new Listener() {
             private boolean mousePressed = false;
             private boolean cellState = false;
 
@@ -155,7 +148,8 @@ public class GameBoard extends Canvas implements Runnable {
                 {
                     case SWT.MouseDown:
                         mousePressed = true;
-                        cellState = !cellGrid.getCell(event.x / cellSize + zoomOffset.x, event.y / cellSize + zoomOffset.y);
+                        cellState = !cellGrid
+                                .getCell(event.x / cellSize + zoomOffset.x, event.y / cellSize + zoomOffset.y);
                         drawCell(event.x, event.y, cellState);
                         break;
 
@@ -177,32 +171,30 @@ public class GameBoard extends Canvas implements Runnable {
 
         this.addListener(SWT.Resize, event -> updateZoomOffset());
 
-
         this.setBackground(BackgroundColor);
-
-        //initGame(shell.getDisplay());   //Запускает игровой цикл
 
         display.asyncExec(this); //initial run() call
         updateZoomOffset();
+
+        Thread t = new Thread(cellGrid, "Game logic thread");
+        t.setDaemon(true);
+        t.start();
     }
 
 
     /**
      *Used by Display.asyncExec() method
      */
-    public void run()
-    {
+    public void run() {
         redraw();
         updateGenLabel();
 
-        if (scnRunning && !scnPaused)
-        {
+        if (scnRunning && !scnPaused) {
             cellGrid.setRunState(false);
             cellGrid.next();
 
 
-            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
-            {
+            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration()) {
                 scnRunning = false;
 
                 //End message
@@ -211,23 +203,19 @@ public class GameBoard extends Canvas implements Runnable {
                 cellGrid.setRunState(false);
                 msg.open();
 
-
-                if (!getShell().isDisposed()) display.asyncExec(this);
-            }
-            else
-            {
+                if (!getShell().isDisposed()) {
+                    display.asyncExec(this);
+                }
+            } else {
                 redraw();
                 cellGrid.incrementGenerations();
                 display.timerExec(cellGrid.getDelay(), this);
             }
         }
 
-
-        else
-        {
+        else {
             if (!getShell().isDisposed()) display.asyncExec(this);
         }
-
     }
 
 
@@ -238,8 +226,7 @@ public class GameBoard extends Canvas implements Runnable {
      * @param state true - place new cell
      *              false - delete cell
      */
-    private void drawCell(int x, int y, boolean state)
-    {
+    private void drawCell(int x, int y, boolean state) {
        if (cellGrid.getRunState() || scnRunning) return;
 
         cellGrid.setCell(x / cellSize + zoomOffset.x, y / cellSize + zoomOffset.y, state );
@@ -257,8 +244,7 @@ public class GameBoard extends Canvas implements Runnable {
     /**
      *Set the new grid image (after resizing, zooming, etc.)
      */
-    private void updateGridImage()
-    {
+    private void updateGridImage() {
         gridImage = new Image( display, getSize().x, getSize().y);
 
         GC gridGC = new GC(gridImage);
@@ -279,8 +265,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Draw the grid on the canvas
      * @param e canvas GC
      */
-    private void drawGrid(GC e)
-    {
+    private void drawGrid(GC e) {
         if (!gridState) return;
 
         for (int i=0; i < getSize().x; i+= cellSize)
@@ -296,8 +281,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Draw the living cells on the canvas
      * @param e canvas GC
      */
-    private void drawCells(GC e)
-    {
+    private void drawCells(GC e) {
         //fillRectangle использует цвет фона для заливки
         e.setBackground(ForegroundColor);
 
@@ -316,8 +300,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Get the generations count since the game has started
      * @return generations count
      */
-    private synchronized int getGeneration()
-    {
+    private synchronized int getGeneration() {
         return cellGrid.getGenerations();
     }
 
@@ -325,8 +308,7 @@ public class GameBoard extends Canvas implements Runnable {
     /**
      * Calculate the new zoomOffset value (depending on canvas size)
      */
-    public void updateZoomOffset()
-    {
+    public void updateZoomOffset() {
         this.zoomOffset.x = (int) (0.5 * (CellGrid.gridColumns - this.getSize().x / cellSize));
         this.zoomOffset.y = (int) (0.5 * (CellGrid.gridRows - this.getSize().y / cellSize));
         this.zoomOffset.width = this.getSize().x / cellSize;
@@ -339,8 +321,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Changes cell size and updates the image
      * @param newCellSize new cell size (in pixels)
      */
-    public synchronized void zoom(int newCellSize)
-    {
+    public synchronized void zoom(int newCellSize) {
         cellSize = newCellSize;
         updateZoomOffset();
         updateGridImage();
@@ -350,8 +331,7 @@ public class GameBoard extends Canvas implements Runnable {
     /**
      * Resets the game
      */
-    public void resetGame()
-    {
+    public void resetGame() {
         this.cellGrid.clear();
         updateGenLabel();
     }
@@ -362,8 +342,7 @@ public class GameBoard extends Canvas implements Runnable {
      * @param newState true - show the grid
      *                 false - hide it
      */
-    public synchronized void setGridState(boolean newState)
-    {
+    public synchronized void setGridState(boolean newState) {
         this.gridState = newState;
         updateGridImage();
     }
@@ -372,8 +351,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Save current pattern
      * @param fileName .gol file name
      */
-    public void saveGame(String fileName)
-    {
+    public void saveGame(String fileName) {
         cellGrid.save(fileName);
     }
 
@@ -381,8 +359,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Load pattern from file
      * @param fileName .gol file name
      */
-    public void loadGame(String fileName)
-    {
+    public void loadGame(String fileName) {
         cellGrid.load(fileName);
         updateGenLabel();
         //redraw();
@@ -402,8 +379,7 @@ public class GameBoard extends Canvas implements Runnable {
      * Load scenario from file and run it.
      * @param fileName .scn file name
      */
-    public void runScenario(String fileName)
-    {
+    public void runScenario(String fileName) {
         cellGrid.clear();
         scenario.clear();
 
@@ -420,8 +396,7 @@ public class GameBoard extends Canvas implements Runnable {
     /**
      * Replay the scenario from the memory
      */
-    public void replayScenario()
-    {
+    public void replayScenario() {
         cellGrid.clear();
         scenario.setInitGeneration();
 
@@ -431,8 +406,7 @@ public class GameBoard extends Canvas implements Runnable {
     }
 
 
-    public void setRecordState(boolean state)
-    {
+    public void setRecordState(boolean state) {
         this.recording = state;
 
 
@@ -453,45 +427,28 @@ public class GameBoard extends Canvas implements Runnable {
     /**
      * Return to the normal game mode
      */
-    public void stopScenarioPlaying()
-    {
+    public void stopScenarioPlaying() {
         scnRunning = false;
     }
-
-
-//    public Rect getZoomOffset()
-//    {
-//        return zoomOffset;
-//    }
-
-//    public void SetScnRunState(boolean state)
-//    {   scenario.setInitGeneration();
-//        scnRunning = state;
-//    }
-
 
     /**
      * Update the generations label
      */
-    public void updateGenLabel()
-    {
-        genLabel.setText(String.format("Generation: %06d", getGeneration()));
+    public void updateGenLabel() {
+        actionManager.sendAction(new UpdateGenLabelAction(String.format("Generation: %06d", getGeneration())));
     }
 
 
     /**
      * Go to the next generation (for the "step" button)
      */
-    public void makeStep()
-    {
-        if (scnRunning)
-        {
+    public void makeStep() {
+        if (scnRunning) {
             cellGrid.setRunState(false);
             cellGrid.next();
 
 
-            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration())
-            {
+            if (!scenario.checkForEntries() && getGeneration() == scenario.getLastGeneration()) {
                 scnRunning = false;
 
                 //End message
@@ -501,8 +458,7 @@ public class GameBoard extends Canvas implements Runnable {
                 msg.open();
 
             }
-            else
-            {
+            else {
                 redraw();
                 cellGrid.incrementGenerations();
             }
@@ -533,6 +489,22 @@ public class GameBoard extends Canvas implements Runnable {
     public synchronized boolean isScnRunning()
     {
         return scnRunning;
+    }
+
+    public void setRunState(boolean state) {
+        this.cellGrid.setRunState(state);
+    }
+
+    public void setDelay(int delay) {
+        this.cellGrid.setDelay(delay);
+    }
+
+    public void next() {
+        this.cellGrid.next();
+    }
+
+    public void incrementGenerations() {
+        this.cellGrid.incrementGenerations();
     }
 
 }

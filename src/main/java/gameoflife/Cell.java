@@ -32,21 +32,17 @@ public class Cell implements Serializable
      * @param col X-pos
      * @param row Y-pos
      */
-    public Cell( int col, int row )
-    {
+    public Cell( int col, int row ) {
         this.col = (short)col;
         this.row = (short)row;
-        neighbour = 0;
     }
 
     /**
      * Default constructor need for save/load operations
      */
-    public Cell()
-   {
+    public Cell() {
        col = 0;
        row = 0;
-       neighbour = 0;
    }
 
 

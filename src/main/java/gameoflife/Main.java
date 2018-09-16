@@ -5,7 +5,9 @@ package gameoflife;
  */
 
 import gameoflife.ui.GameOfLifeUI;
+import gameoflife.ui.board.GameBoard;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
 public class Main {
 
@@ -15,14 +17,12 @@ public class Main {
      */
     public static void main(String[] args) {
         Display display = new Display();
+        Shell shell = new Shell(display);
 
         //game logic thread
-        CellGrid engine = new CellGrid();
-        Thread t = new Thread(engine, "Game logic thread");
-        t.setDaemon(true);
-        t.start();
+        GameBoard gameBoard = new GameBoard(shell);
 
         //GUI
-        new GameOfLifeUI(display, engine);
+        new GameOfLifeUI(shell, gameBoard);
     }
 }
