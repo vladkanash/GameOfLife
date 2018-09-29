@@ -1,4 +1,4 @@
-package gameoflife.ui.board;
+package gameoflife.ui;
 
 import gameoflife.Cell;
 import gameoflife.CellGrid;

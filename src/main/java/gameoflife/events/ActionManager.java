@@ -15,7 +15,7 @@ public enum ActionManager {
         this.listeners.forEach(listener -> listener.processAction(action));
     }
 
-    public <T extends Action> void addListener(Listener listener) {
+    public void addListener(Listener listener) {
         listeners.add(listener);
     }
 }

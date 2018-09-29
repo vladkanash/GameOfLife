@@ -4,7 +4,7 @@ import gameoflife.events.action.Action;
 import gameoflife.events.action.ChangeRunStateAction;
 import org.eclipse.swt.widgets.ToolItem;
 
-public class StartButtonListener extends Listener {
+public class StartButtonListener implements Listener {
 
     private ToolItem button;
 

@@ -4,7 +4,7 @@ import gameoflife.events.action.Action;
 import gameoflife.events.action.UpdateGenLabelAction;
 import org.eclipse.swt.widgets.Label;
 
-public class GenLabelListener extends Listener {
+public class GenLabelListener implements Listener {
 
     private Label label;
 

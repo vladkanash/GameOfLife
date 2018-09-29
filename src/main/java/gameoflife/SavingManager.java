@@ -1,6 +1,6 @@
 package gameoflife;
 
-import gameoflife.ui.board.GameBoard;
+import gameoflife.ui.GameBoard;
 
 public class SavingManager {
 

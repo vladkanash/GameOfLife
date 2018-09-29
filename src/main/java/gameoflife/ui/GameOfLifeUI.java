@@ -6,7 +6,6 @@ import gameoflife.events.action.ChangeRunStateAction;
 import gameoflife.events.listener.GenLabelListener;
 import gameoflife.events.listener.StartButtonListener;
 import gameoflife.events.listener.StopButtonListener;
-import gameoflife.ui.board.GameBoard;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.*;
 import org.eclipse.swt.layout.*;

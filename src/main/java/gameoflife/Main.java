@@ -4,8 +4,8 @@ package gameoflife;
  * Created by Vlad Kanash on 9.7.16.
  */
 
+import gameoflife.ui.GameBoard;
 import gameoflife.ui.GameOfLifeUI;
-import gameoflife.ui.board.GameBoard;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 

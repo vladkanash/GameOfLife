@@ -2,8 +2,8 @@ package gameoflife.events.listener;
 
 import gameoflife.events.action.Action;
 
-public abstract class Listener {
+public interface Listener {
 
-    public abstract void processAction(Action action);
+    void processAction(Action action);
 
 }
